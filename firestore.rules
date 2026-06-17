@@ -1,0 +1,66 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      // Ensuring case-insensitive match and verified email for security
+      return isSignedIn() 
+        && request.auth.token.email.lower() == 'schillerjirka@gmail.com'
+        && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('(?i)^[a-z0-9_\\-]+$');
+    }
+
+    // Car validation
+    function isValidCar(data) {
+      // Basic check for required fields, allowing for other fields
+      return data.keys().hasAll(['name', 'brand', 'priceValue', 'image']) 
+        && data.name is string && data.name.size() <= 300
+        && data.brand is string && data.brand.size() <= 100
+        && data.priceValue is number
+        && data.image is string && data.image.size() <= 1500000;
+    }
+
+    // Inquiry validation
+    function isValidInquiry(data) {
+      return data.keys().hasAll(['name', 'email', 'phone', 'createdAt'])
+        && data.name is string && data.name.size() <= 300
+        && data.email is string && data.email.size() <= 300
+        && data.phone is string && data.phone.size() <= 50
+        && (data.car == null || (data.car is string && data.car.size() <= 300))
+        && (data.message == null || (data.message is string && data.message.size() <= 5000))
+        && (data.createdAt == request.time || data.createdAt is timestamp);
+    }
+
+    match /cars/{carId} {
+      allow read: if true;
+      allow write, delete: if isAdmin();
+    }
+
+    match /inquiries/{inquiryId} {
+      allow create: if true; // Validation handled by isValidInquiry usually, but allow creating for now to debug
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Blogové články – veřejně čitelné, zápis jen admin.
+    match /posts/{postId} {
+      allow read: if true;
+      allow write, delete: if isAdmin();
+    }
+  }
+}

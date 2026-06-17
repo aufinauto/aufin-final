@@ -1,0 +1,63 @@
+{
+  "entities": {
+    "car": {
+      "title": "Car",
+      "description": "A vehicle available in the AUFIN AUTO fleet.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "brand": { "type": "string" },
+        "pickupPrice": { "type": "number", "description": "Platba při převzetí" },
+        "priceValue": { "type": "number", "description": "Display price indicator" },
+        "image": { "type": "string" },
+        "description": { "type": "string" },
+        "details": {
+          "type": "object",
+          "properties": {
+            "fuel": { "type": "string" },
+            "engine": { "type": "string" },
+            "power": { "type": "string" },
+            "transmission": { "type": "string" },
+            "year": { "type": "string" },
+            "color": { "type": "string" }
+          }
+        },
+        "equipment": { "type": "string" },
+        "gallery": { "type": "array", "items": { "type": "string" } },
+        "isVisible": { "type": "boolean", "description": "Whether the car is shown on the public frontend" },
+        "isComingSoon": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "brand", "status"]
+    },
+    "inquiry": {
+      "title": "Inquiry",
+      "description": "A customer lead / inquiry.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "car": { "type": "string" },
+        "message": { "type": "string" },
+        "status": { "type": "string", "enum": ["new", "contacted", "negotiating", "done", "cancelled"] },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "userRole": {
+      "title": "User Role",
+      "properties": {
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "editor"] }
+      }
+    }
+  },
+  "firestore": {
+    "/cars/{carId}": { "schema": "car", "description": "Fleet management" },
+    "/inquiries/{inquiryId}": { "schema": "inquiry", "description": "Leads management" },
+    "/roles/{userId}": { "schema": "userRole", "description": "Permissions" }
+  }
+}

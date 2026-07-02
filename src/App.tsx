@@ -531,7 +531,7 @@ export default function App() {
           <div className="absolute inset-0 bg-black/20 z-10" />
           <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/10 z-10" />
           <img
-            src="https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&q=80&w=1920"
+            src="/hero.png"
             alt="Auto na splátky bez registru – AUFIN AUTO Praha"
             fetchPriority="high"
             loading="eager"

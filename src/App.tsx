@@ -131,7 +131,8 @@ const steps = [
 ];
 
 export default function App() {
-  const [cars, setCars] = useState<CarType[]>(STATIC_CARS);
+  const [cars, setCars] = useState<CarType[]>([]);
+  const [carsLoading, setCarsLoading] = useState(true);
   const [isAdminMode, setIsAdminMode] = useState(() => {
     return sessionStorage.getItem('isAdminMode') === 'true';
   });
@@ -180,13 +181,13 @@ export default function App() {
       }
     };
 
-    if (cars.length > STATIC_CARS.length) { // Wait for firebase cars to load
+    if (!carsLoading) {
       handleLocationChange();
     }
     
     window.addEventListener('popstate', handleLocationChange);
     return () => window.removeEventListener('popstate', handleLocationChange);
-  }, [cars]);
+  }, [cars, carsLoading]);
 
   // Sync URL with selected car
   useEffect(() => {
@@ -219,6 +220,7 @@ export default function App() {
       if (!snapshot.empty) {
         setCars(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CarType)));
       }
+      setCarsLoading(false);
     });
 
     return () => unsubscribe();
@@ -631,7 +633,18 @@ export default function App() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {filteredCars.map((car, i) => (
+            {carsLoading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="rounded-2xl overflow-hidden bg-white/5 animate-pulse">
+                  <div className="h-48 bg-white/10" />
+                  <div className="p-5 space-y-3">
+                    <div className="h-4 bg-white/10 rounded w-3/4" />
+                    <div className="h-3 bg-white/10 rounded w-1/2" />
+                    <div className="h-8 bg-white/10 rounded mt-4" />
+                  </div>
+                </div>
+              ))
+            ) : filteredCars.map((car, i) => (
               <motion.div 
                 key={car.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -655,7 +668,7 @@ export default function App() {
                     height={480}
                     loading="lazy"
                     decoding="async"
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105"
                     referrerPolicy="no-referrer"
                     onLoad={(e) => (e.currentTarget.parentElement as HTMLElement).classList.remove('bg-white/5')}
                   />
@@ -691,7 +704,7 @@ export default function App() {
               </motion.div>
             ))}
           </div>
-          
+
           <div className="mt-16 text-center">
           </div>
         </div>

@@ -13,11 +13,11 @@ export interface Faq {
 export const faqs: Faq[] = [
   {
     q: "Potřebuji k autu na splátky doložit příjem?",
-    a: "Ne. Auto na splátky u nás získáte bez doložení příjmů. Nepožadujeme potvrzení od zaměstnavatele ani daňové přiznání – stačí vaše čestné prohlášení a dva doklady totožnosti.",
+    a: "Ne. Auto na splátky u nás získáte bez doložení příjmů. Nepožadujeme potvrzení od zaměstnavatele ani daňové přiznání – stačí řidičské oprávnění a doklad totožnosti.",
   },
   {
     q: "Co když jsem v registru dlužníků nebo mám exekuci?",
-    a: "Není to překážka. Auto na splátky bez registru znamená, že registry dlužníků nenahlížíme a neřešíme. Posuzujeme každého klienta individuálně, vstřícní jsme i k lidem s exekucí či po insolvenci.",
+    a: "Není to překážka. Auto na splátky bez registru znamená, že registry dlužníků nenahlížíme a neřešíme. Posuzujeme každého klienta individuálně, vstřícní jsme i k lidem s exekucí či insolvencí.",
   },
   {
     q: "Jak rychle proběhne schválení?",
@@ -25,11 +25,11 @@ export const faqs: Faq[] = [
   },
   {
     q: "Kolik zaplatím při převzetí vozu?",
-    a: "Při převzetí vozidla skládáte jednorázovou částku uvedenou u každého vozu. Měsíční nájemné a cena při převzetí jsou vždy transparentně uvedené v detailu konkrétního auta.",
+    a: "Při převzetí vozidla skládáte jednorázovou částku uvedenou u každého vozu. Měsíční nájemné a cena při převzetí jsou vždy uvedené v detailu konkrétního auta.",
   },
   {
     q: "Jaké doklady k vyřízení potřebuji?",
-    a: "K vyřízení auta na splátky vám stačí dva platné doklady totožnosti (např. občanský průkaz a řidičský průkaz). Žádné další potvrzení nepožadujeme.",
+    a: "K vyřízení auta na splátky vám stačí řidičské oprávnění a platný doklad totožnosti (např. řidičský průkaz). Žádné další potvrzení nepožadujeme.",
   },
   {
     q: "Mohu vůz po skončení splátek odkoupit?",

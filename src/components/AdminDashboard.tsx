@@ -178,8 +178,8 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
         img.src = event.target?.result as string;
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 800;
-          const MAX_HEIGHT = 800;
+          const MAX_WIDTH = 1000;
+          const MAX_HEIGHT = 1000;
           let width = img.width;
           let height = img.height;
  
@@ -201,7 +201,7 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
           ctx?.drawImage(img, 0, 0, width, height);
           
           // Compress even more to JPEG with 0.5 quality
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.65);
           resolve(dataUrl);
         };
         img.onerror = reject;
@@ -610,8 +610,8 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-[100] bg-black overflow-y-auto">
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
+      <div className="max-w-7xl mx-auto px-3 md:px-6 py-6 md:py-12">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 md:mb-12">
           <div>
             <div className="flex items-center gap-4 mb-4">
               <div className="w-20 h-20 bg-gold/5 rounded-2xl flex items-center justify-center border border-gold/10 relative overflow-hidden">
@@ -631,54 +631,54 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-4 bg-white/5 px-6 py-2 rounded-2xl border border-white/5">
-              <div className="flex flex-col items-end">
-                <span className="text-[10px] text-white/40 uppercase font-bold tracking-widest">Přihlášen jako</span>
-                <span className="text-[11px] font-bold text-gold">{user?.email}</span>
+          <div className="flex items-center gap-2 md:gap-4 w-full md:w-auto">
+            <div className="flex items-center gap-2 bg-white/5 px-3 md:px-6 py-2 rounded-2xl border border-white/5 flex-1 md:flex-none">
+              <div className="flex flex-col items-start md:items-end flex-1 min-w-0">
+                <span className="text-[10px] text-white/40 uppercase font-bold tracking-widest hidden md:block">Přihlášen jako</span>
+                <span className="text-[11px] font-bold text-gold truncate max-w-[160px] md:max-w-none">{user?.email}</span>
               </div>
-              <button 
+              <button
                 onClick={handleLogout}
-                className="p-3 rounded-xl bg-white/5 hover:bg-red-500/10 hover:text-red-500 transition-all"
+                className="p-2 md:p-3 rounded-xl bg-white/5 hover:bg-red-500/10 hover:text-red-500 transition-all shrink-0"
                 title="Odhlásit se"
               >
-                <LogOut className="w-5 h-5" />
+                <LogOut className="w-4 h-4 md:w-5 md:h-5" />
               </button>
             </div>
-            <button 
+            <button
               onClick={onClose}
-              className="px-6 py-2.5 rounded-xl bg-white text-black hover:bg-gold transition-all text-sm font-bold"
+              className="px-4 md:px-6 py-2.5 rounded-xl bg-white text-black hover:bg-gold transition-all text-xs md:text-sm font-bold shrink-0"
             >
-              ZPĚT NA WEB
+              ZPĚT
             </button>
           </div>
         </div>
 
-        <div className="flex gap-4 mb-10 border-b border-white/5">
-          <button 
+        <div className="flex gap-2 md:gap-4 mb-8 md:mb-10 border-b border-white/5 overflow-x-auto">
+          <button
             onClick={() => setActiveTab('cars')}
-            className={`pb-4 px-2 text-sm font-bold tracking-widest uppercase transition-all relative ${activeTab === 'cars' ? 'text-gold' : 'text-white/40 hover:text-white'}`}
+            className={`pb-4 px-3 md:px-2 text-xs md:text-sm font-bold tracking-widest uppercase transition-all relative whitespace-nowrap ${activeTab === 'cars' ? 'text-gold' : 'text-white/40 hover:text-white'}`}
           >
-            <div className="flex items-center gap-2">
-              <CarIcon className="w-4 h-4" /> VOZIDLA
+            <div className="flex items-center gap-1 md:gap-2">
+              <CarIcon className="w-4 h-4" /> <span>Vozidla</span>
             </div>
             {activeTab === 'cars' && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />}
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('inquiries')}
-            className={`pb-4 px-2 text-sm font-bold tracking-widest uppercase transition-all relative ${activeTab === 'inquiries' ? 'text-gold' : 'text-white/40 hover:text-white'}`}
+            className={`pb-4 px-3 md:px-2 text-xs md:text-sm font-bold tracking-widest uppercase transition-all relative whitespace-nowrap ${activeTab === 'inquiries' ? 'text-gold' : 'text-white/40 hover:text-white'}`}
           >
-            <div className="flex items-center gap-2">
-              <MessageSquare className="w-4 h-4" /> KLIENTI & POPTÁVKY
+            <div className="flex items-center gap-1 md:gap-2">
+              <MessageSquare className="w-4 h-4" /> <span>Poptávky</span>
             </div>
             {activeTab === 'inquiries' && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />}
           </button>
           <button
             onClick={() => setActiveTab('blog')}
-            className={`pb-4 px-2 text-sm font-bold tracking-widest uppercase transition-all relative ${activeTab === 'blog' ? 'text-gold' : 'text-white/40 hover:text-white'}`}
+            className={`pb-4 px-3 md:px-2 text-xs md:text-sm font-bold tracking-widest uppercase transition-all relative whitespace-nowrap ${activeTab === 'blog' ? 'text-gold' : 'text-white/40 hover:text-white'}`}
           >
-            <div className="flex items-center gap-2">
-              <Newspaper className="w-4 h-4" /> BLOG
+            <div className="flex items-center gap-1 md:gap-2">
+              <Newspaper className="w-4 h-4" /> <span>Blog</span>
             </div>
             {activeTab === 'blog' && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />}
           </button>
@@ -932,26 +932,26 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="fixed inset-4 md:inset-12 bg-dark-card border border-white/10 rounded-[40px] z-[120] overflow-hidden flex flex-col shadow-2xl"
             >
-              <div className="p-8 md:p-10 border-b border-white/10 flex justify-between items-center shrink-0">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gold/10 rounded-2xl flex items-center justify-center">
+              <div className="p-4 md:p-10 border-b border-white/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-gold/10 rounded-2xl flex items-center justify-center shrink-0">
                     <Newspaper className="text-gold" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold">{editingPost === 'new' ? 'Nový článek' : 'Úprava článku'}</h2>
-                    <p className="text-white/40 text-xs uppercase tracking-widest font-bold">Blog Editor</p>
+                    <h2 className="text-lg md:text-2xl font-bold">{editingPost === 'new' ? 'Nový článek' : 'Úprava článku'}</h2>
+                    <p className="text-white/40 text-[10px] uppercase tracking-widest font-bold">Blog editor</p>
                   </div>
                 </div>
-                <div className="flex gap-4">
-                  <button onClick={() => setEditingPost(null)} className="px-6 py-2 rounded-xl text-white/40 hover:text-white transition-colors font-bold uppercase tracking-widest text-xs">ODHODIT</button>
-                  <button onClick={savePost} className="px-10 py-4 bg-gold text-black rounded-2xl font-bold hover:bg-white transition-all shadow-xl shadow-gold/20 flex items-center gap-2">
-                    <Save className="w-5 h-5" /> ULOŽIT ČLÁNEK
+                <div className="flex gap-2 md:gap-4 w-full sm:w-auto">
+                  <button onClick={() => setEditingPost(null)} className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-white/40 hover:text-white transition-colors font-bold uppercase tracking-widest text-xs border border-white/10">ODHODIT</button>
+                  <button onClick={savePost} className="flex-1 sm:flex-none px-6 md:px-10 py-2.5 md:py-4 bg-gold text-black rounded-2xl font-bold hover:bg-white transition-all shadow-xl shadow-gold/20 flex items-center justify-center gap-2">
+                    <Save className="w-4 h-4 md:w-5 md:h-5" /> <span>ULOŽIT</span>
                   </button>
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-8 md:p-12 bg-black/20">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+              <div className="flex-1 overflow-y-auto p-4 md:p-12 bg-black/20">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-10">
                   <div className="space-y-6">
                     <div className="relative aspect-video rounded-2xl overflow-hidden bg-black border border-white/5 group">
                       {postForm.coverImage ? (
@@ -1114,35 +1114,35 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="fixed inset-4 md:inset-12 bg-dark-card border border-white/10 rounded-[40px] z-[120] overflow-hidden flex flex-col shadow-2xl"
             >
-              <div className="p-8 md:p-10 bg-dark-card border-b border-white/10 flex justify-between items-center shrink-0">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gold/10 rounded-2xl flex items-center justify-center">
+              <div className="p-4 md:p-10 bg-dark-card border-b border-white/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-gold/10 rounded-2xl flex items-center justify-center shrink-0">
                     {isEditing === 'new' ? <Plus className="text-gold" /> : <Edit className="text-gold" />}
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold">{isEditing === 'new' ? 'Nový vůz v nabídce' : `Editor: ${editForm.name}`}</h2>
-                    <p className="text-white/40 text-xs uppercase tracking-widest font-bold">Fleet Management System</p>
+                    <h2 className="text-lg md:text-2xl font-bold leading-tight">{isEditing === 'new' ? 'Nový vůz' : editForm.name}</h2>
+                    <p className="text-white/40 text-[10px] uppercase tracking-widest font-bold">Fleet editor</p>
                   </div>
                 </div>
-                <div className="flex gap-4">
-                  <button onClick={() => setIsEditing(null)} className="px-6 py-2 rounded-xl text-white/40 hover:text-white transition-colors font-bold uppercase tracking-widest text-xs">ODHODIT</button>
-                  <button onClick={saveCar} className="px-10 py-4 bg-gold text-black rounded-2xl font-bold hover:bg-white transition-all shadow-xl shadow-gold/20 flex items-center gap-2">
-                    <Save className="w-5 h-5" /> ULOŽIT VŮZ
+                <div className="flex gap-2 md:gap-4 w-full sm:w-auto">
+                  <button onClick={() => setIsEditing(null)} className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-white/40 hover:text-white transition-colors font-bold uppercase tracking-widest text-xs border border-white/10">ODHODIT</button>
+                  <button onClick={saveCar} className="flex-1 sm:flex-none px-6 md:px-10 py-2.5 md:py-4 bg-gold text-black rounded-2xl font-bold hover:bg-white transition-all shadow-xl shadow-gold/20 flex items-center justify-center gap-2">
+                    <Save className="w-4 h-4 md:w-5 md:h-5" /> <span>ULOŽIT</span>
                   </button>
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-8 md:p-12 bg-black/20">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+              <div className="flex-1 overflow-y-auto p-4 md:p-12 bg-black/20">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-12">
                   
                   {/* Left Column: Visuals & Core Settings */}
-                  <div className="space-y-8">
-                    <section className="bg-dark-card p-8 rounded-[32px] border border-white/10">
-                        <h3 className="text-gold font-bold tracking-widest text-[10px] uppercase mb-8 flex items-center gap-2">
+                  <div className="space-y-4 md:space-y-8">
+                    <section className="bg-dark-card p-4 md:p-8 rounded-2xl md:rounded-[32px] border border-white/10">
+                        <h3 className="text-gold font-bold tracking-widest text-[10px] uppercase mb-4 md:mb-8 flex items-center gap-2">
                             <ImageIcon className="w-3 h-3" /> Vizuály & Galerie
                         </h3>
-                        
-                        <div className="relative aspect-video rounded-2xl overflow-hidden bg-black border border-white/5 mb-8 group">
+
+                        <div className="relative aspect-video rounded-xl overflow-hidden bg-black border border-white/5 mb-4 md:mb-8 group">
                             {editForm.image ? (
                                 <img src={editForm.image} alt="" className="w-full h-full object-cover" />
                             ) : (
@@ -1151,22 +1151,22 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                                     <span className="text-xs uppercase font-bold tracking-widest">Nahrát foto</span>
                                 </div>
                             )}
-                            <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                            <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 active:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
                                 <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, 'main')} />
                                 <div className="flex flex-col items-center gap-2 text-white">
                                     <Upload className="w-8 h-8" />
-                                    <span className="text-xs font-bold">{uploading ? 'NAHRÁVÁM...' : 'ZMENIT FOTO'}</span>
+                                    <span className="text-xs font-bold">{uploading ? 'NAHRÁVÁM...' : 'ZMĚNIT FOTO'}</span>
                                 </div>
                             </label>
                         </div>
 
-                        <div className="grid grid-cols-4 gap-3 mb-8">
+                        <div className="grid grid-cols-4 md:grid-cols-4 gap-2 md:gap-3 mb-4 md:mb-8">
                           {editForm.gallery?.map((url, idx) => (
                              <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-white/10 group/item">
                                 <img src={url} alt="" className="w-full h-full object-cover" />
-                                <button 
+                                <button
                                   onClick={() => setEditForm({ ...editForm, gallery: editForm.gallery?.filter((_, i) => i !== idx) })}
-                                  className="absolute inset-0 bg-red-500/80 opacity-0 group-hover/item:opacity-100 flex items-center justify-center text-white transition-opacity"
+                                  className="absolute inset-0 bg-red-500/80 opacity-0 group-hover/item:opacity-100 active:opacity-100 flex items-center justify-center text-white transition-opacity"
                                 >
                                   <X className="w-4 h-4" />
                                 </button>
@@ -1178,16 +1178,16 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                           </label>
                         </div>
                     </section>
-                    
-                    <section className="bg-dark-card p-8 rounded-[32px] border border-white/10">
-                      <h3 className="text-gold font-bold tracking-widest text-[10px] uppercase mb-8 flex items-center gap-2">
+
+                    <section className="bg-dark-card p-4 md:p-8 rounded-2xl md:rounded-[32px] border border-white/10">
+                      <h3 className="text-gold font-bold tracking-widest text-[10px] uppercase mb-4 md:mb-8 flex items-center gap-2">
                         <Settings className="w-3 h-3" /> Viditelnost vozu
                       </h3>
-                      <div className="space-y-4">
+                      <div className="space-y-3">
                         <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold ml-1">Zobrazit vůz na webu?</label>
-                        <button 
+                        <button
                             onClick={() => setEditForm({...editForm, isVisible: !editForm.isVisible})}
-                            className={`w-full flex items-center justify-between px-6 py-4 rounded-xl border transition-all ${editForm.isVisible ? 'bg-green-500/10 border-green-500/20 text-green-500' : 'bg-red-500/10 border-red-500/20 text-red-500'}`}
+                            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all ${editForm.isVisible ? 'bg-green-500/10 border-green-500/20 text-green-500' : 'bg-red-500/10 border-red-500/20 text-red-500'}`}
                         >
                             <span className="text-xs font-bold uppercase tracking-wider">{editForm.isVisible ? 'VEŘEJNÉ (ZOBRAZENO)' : 'SKRYTÉ (SCHOVÁNO)'}</span>
                             {editForm.isVisible ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
@@ -1197,63 +1197,62 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                   </div>
 
                   {/* Right Column: Details & Desc */}
-                  <div className="space-y-8">
-                    <section className="bg-dark-card p-8 rounded-[32px] border border-white/10">
-                      <h3 className="text-gold font-bold tracking-widest text-[10px] uppercase mb-8 flex items-center gap-2">
+                  <div className="space-y-4 md:space-y-8">
+                    <section className="bg-dark-card p-4 md:p-8 rounded-2xl md:rounded-[32px] border border-white/10">
+                      <h3 className="text-gold font-bold tracking-widest text-[10px] uppercase mb-4 md:mb-8 flex items-center gap-2">
                         <Info className="w-3 h-3" /> Základní informace & Ceny
                       </h3>
-                      <div className="grid grid-cols-2 gap-6 mb-8">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                         <div className="space-y-2">
                             <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold ml-1">Název modelu</label>
-                            <input 
-                                type="text" 
-                                className="w-full bg-black border border-white/10 rounded-xl px-4 py-4 outline-none focus:border-gold text-sm font-bold"
+                            <input
+                                type="text"
+                                className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-gold text-sm font-bold"
                                 value={editForm.name}
                                 onChange={e => setEditForm({...editForm, name: e.target.value})}
                             />
                         </div>
                         <div className="space-y-2">
                             <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold ml-1">Výrobce</label>
-                            <input 
-                                type="text" 
-                                className="w-full bg-black border border-white/10 rounded-xl px-4 py-4 outline-none focus:border-gold text-sm font-bold"
+                            <input
+                                type="text"
+                                className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-gold text-sm font-bold"
                                 value={editForm.brand}
                                 onChange={e => setEditForm({...editForm, brand: e.target.value})}
                             />
                         </div>
 
-                        <div className="space-y-2 col-span-2">
+                        <div className="space-y-2 col-span-1 sm:col-span-2">
                             <label className="text-[10px] uppercase tracking-widest text-gold font-bold ml-1">Platba při převzetí vozu (Kč)</label>
                             <div className="relative">
-                                <input 
-                                    type="number" 
-                                    className="w-full bg-gold/5 border border-gold/40 rounded-xl px-6 py-4 outline-none focus:border-gold text-gold font-bold text-xl"
+                                <input
+                                    type="number"
+                                    className="w-full bg-gold/5 border border-gold/40 rounded-xl px-4 py-3 outline-none focus:border-gold text-gold font-bold text-lg"
                                     value={editForm.pickupPrice || ''}
                                     placeholder="0"
                                     onChange={e => setEditForm({...editForm, pickupPrice: parseInt(e.target.value) || 0})}
                                 />
-                                <span className="absolute right-6 top-1/2 -translate-y-1/2 text-gold/40 font-bold uppercase tracking-widest text-xs">CZK</span>
+                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gold/40 font-bold uppercase tracking-widest text-xs">CZK</span>
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] uppercase tracking-widest text-gold font-bold ml-1">Měsíční splátka (jen částka)</label>
+                            <label className="text-[10px] uppercase tracking-widest text-gold font-bold ml-1">Měsíční splátka</label>
                             <div className="relative">
-                                <input 
-                                    type="text" 
-                                    className="w-full bg-black border border-white/10 rounded-xl px-4 py-4 outline-none focus:border-gold text-sm font-black text-gold"
+                                <input
+                                    type="text"
+                                    className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-gold text-sm font-black text-gold"
                                     value={editForm.price}
                                     placeholder="např. 5 500"
                                     onChange={e => setEditForm({...editForm, price: e.target.value})}
                                 />
-                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-white/20 italic">Kč / měsíc</span>
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold ml-1">Cena pro řazení (číslo)</label>
-                            <input 
-                                type="number" 
-                                className="w-full bg-black border border-white/10 rounded-xl px-4 py-4 outline-none focus:border-gold text-sm"
+                            <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold ml-1">Cena pro řazení</label>
+                            <input
+                                type="number"
+                                className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-gold text-sm"
                                 value={editForm.priceValue || ''}
                                 placeholder="0"
                                 onChange={e => setEditForm({...editForm, priceValue: parseInt(e.target.value) || 0})}
@@ -1261,36 +1260,36 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4 pt-8 border-t border-white/5">
+                      <div className="grid grid-cols-2 gap-3 pt-4 border-t border-white/5">
                         {Object.keys(editForm.details || {}).map(key => (
                           <div key={key} className="space-y-2">
                             <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold ml-1">{key === 'fuel' ? 'Palivo' : key === 'engine' ? 'Motor' : key === 'power' ? 'Výkon' : key === 'transmission' ? 'Převodovka' : key === 'year' ? 'Rok' : key === 'color' ? 'Barva' : key}</label>
-                            <input 
-                              type="text" 
-                              className="w-full bg-black border border-white/5 rounded-xl px-4 py-3 outline-none focus:border-gold text-sm"
+                            <input
+                              type="text"
+                              className="w-full bg-black border border-white/5 rounded-xl px-3 py-2.5 outline-none focus:border-gold text-sm"
                               value={editForm.details?.[key as keyof typeof editForm.details]}
                               onChange={e => setEditForm({
-                                ...editForm, 
-                                details: { ...editForm.details!, [key]: e.target.value } 
+                                ...editForm,
+                                details: { ...editForm.details!, [key]: e.target.value }
                               })}
                             />
                           </div>
                         ))}
                       </div>
-                      
-                        <div className="space-y-6 pt-8 mt-8 border-t border-white/5">
-                          <div className="space-y-2">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold ml-1">Marketingový popis</label>
-                            <textarea 
-                                className="w-full bg-black border border-white/10 rounded-xl px-4 py-4 outline-none focus:border-gold h-32 resize-none text-sm font-light leading-relaxed"
-                                value={editForm.description}
-                                onChange={e => setEditForm({...editForm, description: e.target.value})}
-                            />
+
+                      <div className="space-y-4 pt-4 mt-4 border-t border-white/5">
+                        <div className="space-y-2">
+                            <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold ml-1">Marketingový popis</label>
+                          <textarea
+                              className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-gold h-28 resize-none text-sm font-light leading-relaxed"
+                              value={editForm.description}
+                              onChange={e => setEditForm({...editForm, description: e.target.value})}
+                          />
                         </div>
                         <div className="space-y-2">
                             <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold ml-1">Seznam výbavy</label>
-                            <textarea 
-                                className="w-full bg-black border border-white/10 rounded-xl px-4 py-4 outline-none focus:border-gold h-32 resize-none text-sm font-light leading-relaxed"
+                            <textarea
+                                className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-gold h-28 resize-none text-sm font-light leading-relaxed"
                                 value={editForm.equipment}
                                 onChange={e => setEditForm({...editForm, equipment: e.target.value})}
                                 placeholder="např. ✔ autorádio, ✔ klimatizace..."
@@ -1299,8 +1298,8 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                       </div>
                     </section>
 
-                    <section className="bg-dark-card p-8 rounded-[32px] border border-white/10">
-                      <h3 className="text-gold font-bold tracking-widest text-[10px] uppercase mb-8 flex items-center gap-2">
+                    <section className="bg-dark-card p-4 md:p-8 rounded-2xl md:rounded-[32px] border border-white/10">
+                      <h3 className="text-gold font-bold tracking-widest text-[10px] uppercase mb-4 md:mb-8 flex items-center gap-2">
                         <Shield className="w-3 h-3" /> SEO Optimalizace (Google)
                       </h3>
                       <div className="space-y-6">

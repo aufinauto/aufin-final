@@ -289,6 +289,7 @@ export default function App() {
       );
 
       // 3. Úspěch — oba kroky prošly
+      (window as any).gtag?.('event', 'form_submit', { event_category: 'lead', event_label: formData.car || 'unspecified' });
       setIsSubmitted(true);
       setFormData({ name: "", email: "", phone: "", car: "", message: "" });
       setTimeout(() => setIsSubmitted(false), 5000);
@@ -520,6 +521,7 @@ export default function App() {
 
           <a
             href="tel:+420731562211"
+            onClick={() => (window as any).gtag?.('event', 'click_phone', { event_category: 'contact', event_label: 'navbar' })}
             className="bg-gold text-black px-6 py-2.5 rounded-full text-sm font-bold hover:bg-white transition-all duration-300"
           >
             +420 731 562 211
@@ -782,7 +784,7 @@ export default function App() {
               </p>
 
               <div className="space-y-8">
-                <a href="tel:+420731562211" target="_top" className="flex items-center gap-4 md:gap-6 group cursor-pointer">
+                <a href="tel:+420731562211" target="_top" onClick={() => (window as any).gtag?.('event', 'click_phone', { event_category: 'contact', event_label: 'contact_section' })} className="flex items-center gap-4 md:gap-6 group cursor-pointer">
                   <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-gold transition-colors shrink-0">
                     <Phone className="text-white group-hover:text-black w-5 h-5 md:w-6 md:h-6" />
                   </div>
@@ -791,7 +793,7 @@ export default function App() {
                     <div className="text-lg md:text-xl font-bold group-hover:text-gold transition-colors whitespace-nowrap">+420 731 562 211</div>
                   </div>
                 </a>
-                <a href="mailto:aufin.auto@gmail.com" target="_top" className="flex items-center gap-4 md:gap-6 group cursor-pointer">
+                <a href="mailto:aufin.auto@gmail.com" target="_top" onClick={() => (window as any).gtag?.('event', 'click_email', { event_category: 'contact', event_label: 'contact_section' })} className="flex items-center gap-4 md:gap-6 group cursor-pointer">
                   <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-gold transition-colors shrink-0">
                     <Mail className="text-white group-hover:text-black w-5 h-5 md:w-6 md:h-6" />
                   </div>
@@ -1184,8 +1186,11 @@ export default function App() {
                 <div className="text-[10px] uppercase tracking-widest text-white/10 font-medium text-left mt-2 mb-6 opacity-60">
                   Cena nezahrnuje pojištění
                 </div>
-                <button 
-                  onClick={() => handleCarInquiry(selectedCar.name)}
+                <button
+                  onClick={() => {
+                    (window as any).gtag?.('event', 'click_car_inquiry', { event_category: 'lead', event_label: selectedCar.name });
+                    handleCarInquiry(selectedCar.name);
+                  }}
                   className="w-full bg-gold text-black font-bold py-5 rounded-2xl hover:bg-white transition-all duration-300 text-lg mt-6"
                 >
                   MÁM ZÁJEM O TENTO VŮZ
@@ -1241,6 +1246,7 @@ export default function App() {
         href="https://wa.me/420731562211?text=Dobr%C3%BD%20den%2C%20m%C3%A1m%20z%C3%A1jem%20o%20financov%C3%A1n%C3%AD%20vozu%20z%20AUFIN%20AUTO."
         target="_blank"
         rel="noopener noreferrer"
+        onClick={() => (window as any).gtag?.('event', 'click_whatsapp', { event_category: 'contact', event_label: 'floating_button' })}
         aria-label="Napsat na WhatsApp"
         className="fixed bottom-6 right-6 z-[300] w-16 h-16 rounded-full flex items-center justify-center shadow-lg transition-transform duration-300 hover:scale-110"
         style={{ background: '#25D366' }}

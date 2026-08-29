@@ -288,7 +288,15 @@ export default function App() {
         import.meta.env.VITE_EMAILJS_PUBLIC_KEY
       );
 
-      // 3. Úspěch — oba kroky prošly
+      // 3. Telegram notifikace
+      const tgText = `🚗 Nová poptávka AUFIN AUTO\n\n👤 ${formData.name}\n📧 ${formData.email || '—'}\n📞 ${formData.phone}\n🚘 ${formData.car || '—'}\n💬 ${formData.message || '—'}`;
+      fetch(`https://api.telegram.org/bot8936858090:AAFwNGfDf_tQbBsTcW_8y4l41VViXtUZo1A/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: '1655849882', text: tgText })
+      }).catch(() => {});
+
+      // 4. Úspěch — oba kroky prošly
       (window as any).gtag?.('event', 'form_submit', { event_category: 'lead', event_label: formData.car || 'unspecified' });
       setIsSubmitted(true);
       setFormData({ name: "", email: "", phone: "", car: "", message: "" });

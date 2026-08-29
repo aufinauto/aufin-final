@@ -240,7 +240,8 @@
       "Bash(curl -s \"https://api.github.com/repos/google/fonts/contents/ofl/ptserif\" --max-time 15)",
       "Bash(curl -sL -o \"C:\\\\Users\\\\schil\\\\OneDrive\\\\Plocha\\\\Dejvetech web\\\\src\\\\assets\\\\fonts\\\\PT_Serif-Italic.ttf\" \"https://raw.githubusercontent.com/google/fonts/main/ofl/ptserif/PT_Serif-Web-Italic.ttf\" --max-time 20)",
       "Bash(curl -s \"http://localhost:3000/opengraph-image?b8e43770548de306\" --max-time 15 -o \"C:\\\\Users\\\\schil\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-schil-OneDrive-Plocha-AUFINAUTO\\\\e568d56f-1aad-4953-9471-a4cd61a7ba98\\\\scratchpad\\\\og-preview2.png\")",
-      "Bash(curl -s \"http://localhost:3000/opengraph-image?3ade3a48a618cc3b\" --max-time 15 -o \"C:\\\\Users\\\\schil\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-schil-OneDrive-Plocha-AUFINAUTO\\\\e568d56f-1aad-4953-9471-a4cd61a7ba98\\\\scratchpad\\\\og-preview3.png\")"
+      "Bash(curl -s \"http://localhost:3000/opengraph-image?3ade3a48a618cc3b\" --max-time 15 -o \"C:\\\\Users\\\\schil\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-schil-OneDrive-Plocha-AUFINAUTO\\\\e568d56f-1aad-4953-9471-a4cd61a7ba98\\\\scratchpad\\\\og-preview3.png\")",
+      "Bash(curl -s -o /dev/null -w \"health pred restartem: %{http_code}\\\\n\" http://127.0.0.1:8420/health --max-time 2)"
     ]
   }
 }

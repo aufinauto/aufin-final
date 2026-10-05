@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="cs">
+<html lang="cs" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,7 +7,7 @@
     <meta name="description" content="Auto na splátky bez registru a bez doložení příjmů. Pronájem s možností odkupu: počáteční platba a měsíční nájemné předem u každého vozu. Schválení do 30 minut, AUFIN AUTO Praha." />
     <meta name="author" content="AUFIN AUTO" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
-    <meta name="theme-color" content="#FFFFFF" />
+    <meta name="theme-color" content="#111215" />
     <!--
       Náhled vs. ostrý web: rozhoduje doména, ne přepínač. Mimo aufinauto.cz
       se stránka označí noindex a nespustí se Google Analytics (seznam domén
@@ -17,11 +17,12 @@
       window.__AUFIN_PROD__ = ["www.aufinauto.cz", "aufinauto.cz"].indexOf(location.hostname) !== -1;
       if (!window.__AUFIN_PROD__) {
         document.querySelector('meta[name="robots"]').setAttribute("content", "noindex, nofollow");
-        // Náhled: zkušební tmavý vzhled (přepínač v liště nebo ?tema=tmave).
+        // Náhled: web je tmavý (data-theme na <html>); pro porovnání lze přepnout na světlý
+        // (přepínač v liště nebo ?tema=svetle). Na ostrém webu se nic nepřepíná.
         try {
           var t = new URLSearchParams(location.search).get("tema");
-          if (t) localStorage.setItem("aufin-preview-theme", t === "tmave" ? "dark" : "light");
-          if (localStorage.getItem("aufin-preview-theme") === "dark") document.documentElement.dataset.theme = "dark";
+          if (t) localStorage.setItem("aufin-preview-theme", t === "svetle" ? "light" : "dark");
+          if (localStorage.getItem("aufin-preview-theme") === "light") delete document.documentElement.dataset.theme;
         } catch (e) {}
       }
     </script>

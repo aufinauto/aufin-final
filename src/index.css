@@ -4,7 +4,7 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 
-  /* Veřejný web – světlý vzhled s oranžovou z loga */
+  /* Veřejný web – základní (světlé) hodnoty; web ale běží v tmavé variantě níže */
   --color-ink: #17181C;         /* hlavní text */
   --color-paper: #FFFFFF;       /* pozadí */
   --color-sand: #F6F4F1;        /* střídavé sekce */
@@ -23,7 +23,7 @@
 }
 
 /*
- * Tmavá varianta – zatím jen k vyzkoušení v náhledu (přepínač v liště NÁHLED V2).
+ * Tmavý vzhled – výchozí pro celý web (data-theme="dark" na <html> v index.html).
  * Mění pouze hodnoty tokenů, komponenty zůstávají stejné.
  */
 :root[data-theme="dark"] {

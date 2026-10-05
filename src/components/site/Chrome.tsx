@@ -70,7 +70,7 @@ export function PreviewBanner() {
   );
   if (!IS_PREVIEW) return null;
 
-  // Vyzkoušení tmavého vzhledu – jen v náhledu, ostrý web zůstává světlý.
+  // Porovnání se světlým vzhledem – jen v náhledu, ostrý web je vždy tmavý (data-theme v index.html).
   const toggle = () => {
     const next = !dark;
     setDark(next);

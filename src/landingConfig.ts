@@ -34,7 +34,7 @@ export const LANDING_PAGES: Record<string, LandingConfig> = {
     badge: "Registry neřešíme",
     h1: "Auta na splátky bez registru",
     lead:
-      "Hledáte auto na splátky a bojíte se, že vás kvůli záznamu v registru dlužníků nikde neschválí? U AUFIN AUTO registry nenahlížíme. Vyberete si prověřený vůz, schválení vyřídíme do 30 minut a odjíždíte ještě dnes.",
+      "Hledáte auto na splátky a bojíte se, že vás kvůli záznamu v registru dlužníků nikde neschválí? U AUFIN AUTO registry nenahlížíme. Vyberete si prověřený vůz, schválení vyřídíme do 30 minut a po podpisu smlouvy a uhrazení počáteční platby můžete odjet ještě dnes.",
     benefits: [
       "Bez nahlížení do registrů dlužníků (SOLUS, BRKI, NRKI)",
       "Bez doložení příjmů a potvrzení od zaměstnavatele",
@@ -69,16 +69,17 @@ export const LANDING_PAGES: Record<string, LandingConfig> = {
   "auto-na-splatky-bez-akontace": {
     slug: "auto-na-splatky-bez-akontace",
     keyword: "auto na splátky bez akontace",
-    title: "Auto na splátky bez akontace | AUFIN AUTO",
+    title: "Auto na splátky bez akontace? Jasná počáteční platba | AUFIN AUTO",
     description:
-      "Auto na splátky bez akontace a bez doložení příjmů. Žádná vysoká počáteční platba navíc – platíte jen za převzetí vozu. Schválení do 30 minut.",
-    badge: "Bez akontace navíc",
-    h1: "Auto na splátky bez akontace",
+      "Auto na splátky bez klasické akontace z ceny vozu. Při převzetí zaplatíte počáteční platbu uvedenou u každého auta, dál měsíční nájemné. Bez registrů a doložení příjmů.",
+    badge: "Místo akontace jasná počáteční platba",
+    h1: "Auto na splátky bez akontace? Místo ní počáteční platba",
     lead:
-      "Nemáte stranou desítky tisíc na akontaci? U AUFIN AUTO ji navíc neplatíte. Skládáte pouze transparentní částku za převzetí vozu a dál hradíte měsíční nájemné. Žádná skrytá počáteční platba.",
+      "Nemáte stranou desítky tisíc na akontaci jako u leasingu? U AUFIN AUTO neplatíte akontaci počítanou z ceny vozu. Bez vstupní platby to ale nejde: při převzetí vozu zaplatíte počáteční platbu, jejíž výši vidíte předem u každého auta, a dál hradíte měsíční nájemné.",
     benefits: [
-      "Bez klasické akontace jako u leasingu",
-      "Jasná částka za převzetí, žádné skryté poplatky",
+      "Bez klasické akontace v procentech z ceny vozu",
+      "Počáteční platba při převzetí – předem uvedená u každého vozu",
+      "Pojištění se platí zvlášť, mimo nájemné",
       "Bez registrů a bez doložení příjmů",
       "Schválení do 30 minut",
     ],
@@ -86,19 +87,19 @@ export const LANDING_PAGES: Record<string, LandingConfig> = {
       {
         h2: "Co znamená auto na splátky bez akontace",
         paragraphs: [
-          "Akontace je počáteční platba, kterou u běžného leasingu skládáte předem – často 10 až 30 % ceny vozu. Pro řadu lidí je to nepřekonatelná překážka. AUFIN AUTO tuto akontaci nepožaduje.",
-          "Místo ní platíte jasně danou částku za převzetí vozidla, která je vždy uvedená přímo u konkrétního auta. Žádné dopočítávání, žádné překvapení ve smlouvě.",
+          "Akontace je počáteční platba, kterou u běžného leasingu skládáte předem – často 10 až 30 % ceny vozu. Pro řadu lidí je to nepřekonatelná překážka. AUFIN AUTO akontaci v tomto smyslu nepožaduje – neznamená to ale, že odjedete bez jakékoli platby.",
+          "Místo ní zaplatíte při převzetí vozidla počáteční platbu, jejíž výše je vždy uvedená přímo u konkrétního auta. Bez uhrazení počáteční platby vůz předat nelze.",
         ],
       },
       {
         h2: "Kolik zaplatíte na začátku",
         paragraphs: [
-          "U každého vozu v naší nabídce najdete dvě čísla: měsíční nájemné a částku při převzetí vozidla. To je vše, co na startu řešíte. Po podpisu smlouvy odjíždíte a dál hradíte pouze pravidelné měsíční splátky.",
+          "U každého vozu v naší nabídce najdete dvě čísla: počáteční platbu při převzetí vozidla a měsíční nájemné. Po podpisu smlouvy a uhrazení počáteční platby odjíždíte a dál hradíte pravidelné měsíční nájemné podle smlouvy.",
           "Cena nezahrnuje pojištění – to si sjednáváte samostatně, abyste měli plnou kontrolu nad jeho rozsahem.",
         ],
       },
     ],
-    faqSlugs: [3, 0, 1, 2, 5],
+    faqSlugs: [6, 3, 7, 0, 1, 2, 5],
   },
 
   "auto-na-splatky-s-exekuci": {

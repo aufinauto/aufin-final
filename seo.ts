@@ -1,0 +1,218 @@
+/**
+ * Sdílené SEO pro server.ts (lokální běh) i scripts/prerender.ts (build pro Vercel).
+ * Jediné místo, kde jsou title/description/canonical jednotlivých stránek,
+ * robots.txt a sitemap – server i statický build tak nemůžou mít jiná data.
+ */
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection, getDocs } from "firebase/firestore";
+import { LANDING_PAGES } from "./src/landingConfig";
+import { STATIC_POSTS } from "./src/blogPosts";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+export const SITE_URL = "https://www.aufinauto.cz";
+
+export interface RouteMeta {
+  title: string;
+  description: string;
+  canonical: string;
+  robots?: string;
+}
+
+// Mapa reálných HTML rout → SEO meta. Hodnoty se vkládají do index.html ještě
+// před spuštěním Reactu, takže je crawler vidí i bez JS.
+export const ROUTE_META: Record<string, RouteMeta> = {
+  "/": {
+    title: "Auta na splátky bez registru a bez příjmů | AUFIN AUTO Praha",
+    description:
+      "Auto na splátky bez registru a bez doložení příjmů. Pronájem s možností odkupu: počáteční platba a měsíční nájemné předem u každého vozu. Schválení do 30 minut, AUFIN AUTO Praha.",
+    canonical: `${SITE_URL}/`,
+  },
+};
+for (const cfg of Object.values(LANDING_PAGES)) {
+  ROUTE_META[`/${cfg.slug}`] = {
+    title: cfg.title,
+    description: cfg.description,
+    canonical: `${SITE_URL}/${cfg.slug}`,
+  };
+}
+ROUTE_META["/auta-k-prodeji"] = {
+  title: "Ojetá auta na prodej Praha | AUFIN AUTO",
+  description:
+    "Ojetá auta na prodej v Praze. Prohlédněte si aktuální nabídku vozů AUFIN AUTO. Prověřené vozy, férové ceny a možnost rychlého převzetí.",
+  canonical: `${SITE_URL}/auta-k-prodeji`,
+};
+ROUTE_META["/vykup-auta"] = {
+  title: "Výkup aut Praha – vykoupíme váš vůz | AUFIN AUTO",
+  description:
+    "Chcete prodat auto? Vykoupíme váš vůz rychle a bez zbytečných starostí. Férová nabídka, rychlé vyřízení a možnost protiúčtu. Výkup aut Praha – AUFIN AUTO.",
+  canonical: `${SITE_URL}/vykup-auta`,
+};
+ROUTE_META["/kontakt"] = {
+  title: "Kontakt | AUFIN AUTO",
+  description:
+    "Kontaktujte AUFIN AUTO – auta na splátky bez registru, auta k prodeji a výkup aut. Zavolejte, napište na WhatsApp nebo vyplňte krátký formulář.",
+  canonical: `${SITE_URL}/kontakt`,
+};
+ROUTE_META["/ochrana-osobnich-udaju"] = {
+  title: "Ochrana osobních údajů (GDPR) | AUFIN AUTO",
+  description:
+    "Zásady zpracování a ochrany osobních údajů společnosti AUFI s.r.o. (AUFIN AUTO) v souladu s GDPR.",
+  canonical: `${SITE_URL}/ochrana-osobnich-udaju`,
+  robots: "noindex, follow",
+};
+ROUTE_META["/blog"] = {
+  title: "Blog – rádce o autech na splátky | AUFIN AUTO",
+  description:
+    "Rádce a praktické články o autech na splátky bez registru – podmínky, insolvence, smlouvy a tipy, jak na financování vozu.",
+  canonical: `${SITE_URL}/blog`,
+};
+
+export const NOT_FOUND_META: RouteMeta = {
+  title: "Stránka nenalezena (404) | AUFIN AUTO",
+  description: "Požadovaná stránka neexistuje.",
+  canonical: SITE_URL,
+  robots: "noindex, follow",
+};
+
+export const PREVIEW_ROBOTS = "noindex, nofollow";
+
+export const ROBOTS_TXT =
+  "User-agent: *\n" + "Allow: /\n" + "Disallow: /api/\n" + `Sitemap: ${SITE_URL}/sitemap.xml\n`;
+export const PREVIEW_ROBOTS_TXT = "# Náhled – neindexovat\nUser-agent: *\nDisallow: /\n";
+
+const escapeAttr = (s: string) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+
+export const slugify = (s: string) =>
+  s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "");
+
+/** Vloží do HTML šablony per-route <title>, description, canonical a OG tagy. */
+export function injectMeta(html: string, meta: RouteMeta, preview = false): string {
+  if (preview) meta = { ...meta, robots: PREVIEW_ROBOTS };
+  const og =
+    `<meta property="og:title" content="${escapeAttr(meta.title)}" />\n    ` +
+    `<meta property="og:description" content="${escapeAttr(meta.description)}" />\n    ` +
+    `<meta property="og:url" content="${meta.canonical}" />`;
+  let out = html
+    .replace(/<title>[\s\S]*?<\/title>/, `<title>${escapeAttr(meta.title)}</title>`)
+    .replace(
+      /<meta name="description" content="[^"]*"\s*\/>/,
+      `<meta name="description" content="${escapeAttr(meta.description)}" />`
+    )
+    .replace(/<link rel="canonical" href="[^"]*"\s*\/>/, `<link rel="canonical" href="${meta.canonical}" />\n    ${og}`);
+  if (meta.robots) {
+    out = out.replace(
+      /<meta name="robots" content="[^"]*"\s*\/>/,
+      `<meta name="robots" content="${escapeAttr(meta.robots)}" />`
+    );
+  }
+  return out;
+}
+
+// Lazy inicializace Firestore – jen pro čtení článků a vozů (sitemap, prerender).
+let firestore: ReturnType<typeof getFirestore> | null = null;
+function getDb() {
+  if (!firestore) {
+    const cfg = JSON.parse(fs.readFileSync(path.join(__dirname, "firebase-applet-config.json"), "utf-8"));
+    firestore = getFirestore(initializeApp(cfg), cfg.firestoreDatabaseId);
+  }
+  return firestore;
+}
+
+export interface DynamicPage {
+  path: string;
+  meta: RouteMeta;
+  priority: string;
+  changefreq: string;
+}
+
+/** Blogové články (Firestore + statické) a detaily vozů – pro sitemap i prerender. */
+export async function getDynamicPages(): Promise<DynamicPage[]> {
+  const pages: DynamicPage[] = [];
+
+  // Blogové články – deduplikováno podle slugu, Firestore má přednost.
+  const posts = new Map<string, any>();
+  try {
+    const snap = await getDocs(collection(getDb(), "posts"));
+    snap.forEach((d) => {
+      const p = d.data() as any;
+      if (p.slug && p.isPublished !== false) posts.set(p.slug, p);
+    });
+  } catch {
+    /* offline / chybí oprávnění – použijí se jen statické články */
+  }
+  for (const p of STATIC_POSTS) if (p.isPublished !== false && !posts.has(p.slug)) posts.set(p.slug, p);
+  posts.forEach((p, slug) =>
+    pages.push({
+      path: `/blog/${slug}`,
+      meta: {
+        title: p.seo?.title || `${p.title} | AUFIN AUTO`,
+        description: p.seo?.description || p.excerpt || ROUTE_META["/blog"].description,
+        canonical: `${SITE_URL}/blog/${slug}`,
+      },
+      priority: "0.7",
+      changefreq: "monthly",
+    })
+  );
+
+  // Detaily vozů na splátky.
+  try {
+    const snap = await getDocs(collection(getDb(), "cars"));
+    snap.forEach((d) => {
+      const c = d.data() as any;
+      if (c.isVisible === false) return;
+      const slug = c.seo?.slug || slugify(c.name || "");
+      if (!slug) return;
+      pages.push({
+        path: `/auto/${slug}`,
+        meta: {
+          // Stejně jako v App.tsx (Helmet), ať se meta po načtení Reactu nemění.
+          title: c.seo?.title || `${c.name} na splátky | AUFIN AUTO`,
+          description:
+            c.seo?.description ||
+            (c.description ? String(c.description).substring(0, 160) : ROUTE_META["/"].description),
+          canonical: `${SITE_URL}/auto/${slug}`,
+        },
+        priority: "0.6",
+        changefreq: "weekly",
+      });
+    });
+  } catch {
+    /* offline – detaily vozů se nepřidají */
+  }
+  return pages;
+}
+
+/** Celá sitemap.xml – statické stránky + články + vozy. */
+export async function buildSitemapXml(dynamic?: DynamicPage[]): Promise<string> {
+  const today = new Date().toISOString().split("T")[0];
+  const urls = [
+    { loc: `${SITE_URL}/`, priority: "1.0", changefreq: "weekly" },
+    ...Object.values(LANDING_PAGES).map((c) => ({ loc: `${SITE_URL}/${c.slug}`, priority: "0.9", changefreq: "monthly" })),
+    { loc: `${SITE_URL}/auta-k-prodeji`, priority: "0.6", changefreq: "weekly" },
+    { loc: `${SITE_URL}/vykup-auta`, priority: "0.6", changefreq: "monthly" },
+    { loc: `${SITE_URL}/kontakt`, priority: "0.5", changefreq: "yearly" },
+    { loc: `${SITE_URL}/blog`, priority: "0.8", changefreq: "weekly" },
+    ...(dynamic ?? (await getDynamicPages())).map((p) => ({ loc: p.meta.canonical, priority: p.priority, changefreq: p.changefreq })),
+  ];
+  return (
+    `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+    urls
+      .map(
+        (u) =>
+          `  <url>\n    <loc>${u.loc}</loc>\n    <lastmod>${today}</lastmod>\n` +
+          `    <changefreq>${u.changefreq}</changefreq>\n    <priority>${u.priority}</priority>\n  </url>`
+      )
+      .join("\n") +
+    `\n</urlset>\n`
+  );
+}

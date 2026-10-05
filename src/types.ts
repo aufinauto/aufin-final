@@ -17,6 +17,10 @@ export interface Car {
   };
   equipment: string;
   gallery: string[];
+  /** Délka nájmu v měsících – bez ní se celková částka nezobrazuje. */
+  termMonths?: number;
+  /** Závěrečná odkupní platba (Kč), pokud ji smlouva má. */
+  buyoutPrice?: number;
   isVisible?: boolean;
   isComingSoon?: boolean;
   seo?: {
@@ -26,8 +30,41 @@ export interface Car {
   };
 }
 
+/** Vůz na prodej za plnou cenu (hotově / převodem) – samostatný sklad, kolekce `saleCars`. */
+export interface SaleCar {
+  id: string;
+  name: string;
+  brand: string;
+  price: number; // celková kupní cena v Kč
+  image: string;
+  gallery: string[];
+  description: string;
+  equipment?: string;
+  details: {
+    year: string;
+    mileage: string;
+    fuel: string;
+    engine: string;
+    power: string;
+    transmission: string;
+    color: string;
+  };
+  isVisible?: boolean;
+  isSold?: boolean;
+  createdAt?: any;
+  updatedAt?: any;
+}
+
+export type InquiryType = 'installment' | 'cash' | 'buyout' | 'contact';
+
 export interface Inquiry {
   id: string;
+  /** Chybí u starších poptávek = splátky. */
+  type?: InquiryType;
+  details?: Record<string, string>;
+  /** Starší poptávky: fotky přímo v dokumentu. Nové: počet fotek v kolekci inquiryPhotos. */
+  photos?: string[];
+  photoCount?: number;
   name: string;
   email: string;
   phone: string;

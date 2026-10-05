@@ -15,6 +15,7 @@ import { ChevronRight, ChevronLeft, Phone } from "lucide-react";
 import { db } from "../lib/firebase";
 import { BlogPost } from "../types";
 import { STATIC_POSTS } from "../blogPosts";
+import { SiteHeader, SiteFooter, PHONE_DISPLAY, PHONE_HREF } from "./site/Chrome";
 
 const BASE_URL = "https://www.aufinauto.cz";
 
@@ -25,7 +26,7 @@ function renderContent(content: string) {
     const trimmed = block.trim();
     if (trimmed.startsWith("## ")) {
       return (
-        <h2 key={i} className="text-2xl md:text-3xl font-bold text-white mt-12 mb-4">
+        <h2 key={i} className="text-2xl md:text-3xl font-bold text-ink mt-12 mb-4">
           {trimmed.slice(3)}
         </h2>
       );
@@ -50,42 +51,10 @@ function renderContent(content: string) {
 
 function Shell({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-gold selection:text-black">
-      <nav className="fixed top-6 left-1/2 -translate-x-1/2 w-[95%] max-w-7xl z-50">
-        <div className="bg-black/60 backdrop-blur-2xl border border-white/10 rounded-[32px] px-6 md:px-8 h-16 md:h-20 flex items-center justify-between shadow-2xl shadow-gold/10">
-          <a href="/" className="flex flex-col leading-none">
-            <span className="text-xl font-black tracking-tighter uppercase">AUFIN</span>
-            <span className="text-gold text-xs font-bold tracking-[0.3em]">AUTO</span>
-          </a>
-          <div className="hidden md:flex items-center gap-8 text-sm font-medium uppercase tracking-widest text-white/70">
-            <a href="/#nabidka-aut" className="hover:text-gold transition-colors">Nabídka aut</a>
-            <a href="/blog" className="hover:text-gold transition-colors">Blog</a>
-            <a href="/#caste-dotazy" className="hover:text-gold transition-colors">Časté dotazy</a>
-          </div>
-          <a href="/#formular" className="bg-gold text-black px-6 py-2.5 rounded-full text-sm font-bold hover:bg-white transition-all duration-300">
-            CHCI AUTO
-          </a>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-paper text-ink selection:bg-brand selection:text-ink">
+      <SiteHeader />
       {children}
-      <footer className="py-16 border-t border-white/10 bg-black px-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between gap-8 text-sm text-white/40 font-light">
-          <div className="flex flex-col leading-none">
-            <span className="text-xl font-black tracking-tighter uppercase text-white">AUFIN</span>
-            <span className="text-gold text-sm font-bold tracking-[0.2em]">AUTO</span>
-          </div>
-          <div className="space-y-1">
-            <p className="font-bold text-white/60">AUFI s.r.o.</p>
-            <p>IČO: 24398071</p>
-            <p>Humpolecká 1886/26, Krč, 140 00 Praha</p>
-          </div>
-          <nav className="flex flex-col gap-2">
-            <a href="/blog" className="hover:text-gold transition-colors">Blog</a>
-            <a href="/auta-na-splatky-bez-registru" className="hover:text-gold transition-colors">Auta na splátky bez registru</a>
-            <a href="/ochrana-osobnich-udaju" className="hover:text-gold transition-colors">Ochrana osobních údajů</a>
-          </nav>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
@@ -117,10 +86,10 @@ export default function Blog() {
     if (!post) {
       return (
         <Shell>
-          <div className="max-w-3xl mx-auto px-6 pt-48 pb-32 text-center">
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-16 pb-24 text-center">
             <Helmet><title>Článek nenalezen | AUFIN AUTO</title><meta name="robots" content="noindex" /></Helmet>
             <h1 className="text-3xl font-bold mb-6">Článek nenalezen</h1>
-            <a href="/blog" className="text-gold hover:text-white transition-colors">← Zpět na blog</a>
+            <a href="/blog" className="text-brand-deep hover:underline">← Zpět na blog</a>
           </div>
         </Shell>
       );
@@ -150,40 +119,40 @@ export default function Blog() {
           <meta property="og:image" content={post.coverImage} />
           <script type="application/ld+json">{JSON.stringify(articleSchema)}</script>
         </Helmet>
-        <article className="max-w-3xl mx-auto px-6 pt-36 md:pt-44 pb-24">
-          <a href="/blog" className="inline-flex items-center gap-1 text-white/40 hover:text-gold transition-colors text-sm mb-8">
+        <article className="max-w-3xl mx-auto px-4 sm:px-6 pt-10 md:pt-16 pb-20">
+          <a href="/blog" className="inline-flex items-center gap-1 text-ink/60 hover:text-brand-deep transition-colors text-sm mb-8">
             <ChevronLeft className="w-4 h-4" /> Zpět na blog
           </a>
           {post.category && (
-            <span className="inline-block px-3 py-1 rounded-full bg-gold/10 border border-gold/20 text-gold text-xs font-bold tracking-widest uppercase mb-5">
+            <span className="inline-block px-3 py-1 rounded-full bg-brand-soft text-brand-deep text-xs font-bold tracking-wider uppercase mb-5">
               {post.category}
             </span>
           )}
           <h1 className="text-3xl md:text-5xl font-bold tracking-tight mb-6 leading-tight">{post.title}</h1>
-          <div className="text-white/40 text-sm mb-8">{post.author || "AUFIN AUTO"}</div>
+          <div className="text-ink/60 text-sm mb-8">{post.author || "AUFIN AUTO"}</div>
           {post.coverImage && (
             <img
               src={post.coverImage}
               alt={post.title}
               width={1200}
               height={630}
-              className="w-full rounded-3xl border border-white/10 mb-10 object-cover aspect-[16/9]"
+              className="w-full rounded-3xl border border-line mb-10 object-cover aspect-[16/9]"
               referrerPolicy="no-referrer"
             />
           )}
-          <div className="text-white/60 font-light leading-relaxed text-lg">
+          <div className="text-ink/80 leading-relaxed text-lg">
             {renderContent(post.content)}
           </div>
 
-          <div className="mt-16 bg-dark-card rounded-3xl border border-white/5 p-10 text-center">
+          <div className="mt-16 bg-sand rounded-3xl border border-line p-6 sm:p-10 text-center">
             <h2 className="text-2xl md:text-3xl font-bold mb-3">Hledáte auto na splátky?</h2>
-            <p className="text-white/50 font-light mb-8">Vyberte si vůz z naší nabídky – schválení do 30 minut, bez registru.</p>
+            <p className="text-ink/70 mb-8">Vyberte si vůz z naší nabídky – schválení do 30 minut, bez registru.</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a href="/#nabidka-aut" className="bg-gold text-black px-8 py-4 rounded-full font-bold hover:bg-white transition-all flex items-center justify-center gap-2">
-                NABÍDKA AUT <ChevronRight className="w-5 h-5" />
+              <a href="/#nabidka-aut" className="btn-primary">
+                Auta na splátky <ChevronRight className="w-5 h-5" />
               </a>
-              <a href="tel:+420731562211" className="border border-white/20 hover:border-gold px-8 py-4 rounded-full font-bold transition-all flex items-center justify-center gap-2">
-                <Phone className="w-5 h-5" /> +420 731 562 211
+              <a href={PHONE_HREF} className="btn-secondary">
+                <Phone className="w-5 h-5" /> {PHONE_DISPLAY}
               </a>
             </div>
           </div>
@@ -208,19 +177,19 @@ export default function Blog() {
         <meta property="og:url" content={`${BASE_URL}/blog`} />
       </Helmet>
 
-      <section className="max-w-5xl mx-auto px-6 pt-40 md:pt-52 pb-12 text-center">
-        <span className="inline-block px-4 py-1.5 rounded-full bg-gold/10 border border-gold/20 text-gold text-xs font-bold tracking-[0.2em] uppercase mb-6">
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 pt-12 md:pt-20 pb-10 text-center">
+        <span className="inline-block px-3 py-1 rounded-full bg-brand-soft text-brand-deep text-xs font-bold tracking-wider uppercase mb-5">
           Rádce
         </span>
-        <h1 className="text-4xl md:text-7xl font-bold tracking-tight mb-6">Blog AUFIN AUTO</h1>
-        <p className="text-lg text-white/60 max-w-2xl mx-auto font-light">
+        <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-5">Blog AUFIN AUTO</h1>
+        <p className="text-lg text-ink/75 max-w-2xl mx-auto">
           Praktické články o autech na splátky bez registru – podmínky, financování při exekuci či insolvenci a tipy, na co si dát pozor.
         </p>
       </section>
 
-      <section className="max-w-6xl mx-auto px-6 pb-24">
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-20">
         {published.length === 0 ? (
-          <p className="text-center text-white/40 py-20">Zatím zde nejsou žádné články.</p>
+          <p className="text-center text-ink/60 py-20">Zatím zde nejsou žádné články.</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {published.map((post, i) => (
@@ -231,9 +200,9 @@ export default function Blog() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.08 }}
-                className="group bg-dark-card rounded-3xl overflow-hidden border border-white/5 hover:border-gold/30 transition-all duration-500 flex flex-col"
+                className="group bg-card rounded-3xl overflow-hidden border border-line hover:shadow-lg transition-shadow flex flex-col"
               >
-                <div className="aspect-[16/10] overflow-hidden bg-white/5">
+                <div className="aspect-[16/10] overflow-hidden bg-sand">
                   {post.coverImage && (
                     <img
                       src={post.coverImage}
@@ -247,11 +216,11 @@ export default function Blog() {
                 </div>
                 <div className="p-6 flex flex-col flex-1">
                   {post.category && (
-                    <span className="text-[10px] uppercase tracking-widest text-gold font-bold mb-3">{post.category}</span>
+                    <span className="text-xs uppercase tracking-wider text-brand-deep font-bold mb-3">{post.category}</span>
                   )}
-                  <h2 className="text-xl font-bold mb-3 leading-snug group-hover:text-gold transition-colors">{post.title}</h2>
-                  <p className="text-white/50 text-sm font-light leading-relaxed mb-6 flex-1">{post.excerpt}</p>
-                  <span className="inline-flex items-center gap-1 text-gold text-sm font-bold">
+                  <h2 className="text-xl font-bold mb-3 leading-snug group-hover:text-brand-deep transition-colors">{post.title}</h2>
+                  <p className="text-ink/70 text-sm leading-relaxed mb-6 flex-1">{post.excerpt}</p>
+                  <span className="inline-flex items-center gap-1 text-brand-deep text-sm font-bold">
                     Číst článek <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </span>
                 </div>

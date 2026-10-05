@@ -13,6 +13,9 @@ import {
 import { db, auth, googleProvider } from '../lib/firebase';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { Car, Inquiry, BlogPost } from '../types';
+import SaleCarsAdmin from './SaleCarsAdmin';
+import InquiryPhotos, { deleteInquiryPhotos } from './InquiryPhotos';
+import { LEAD_TYPE_LABELS } from '../lib/leads';
 import { 
   Plus, 
   Trash2, 
@@ -98,7 +101,7 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
   const [cars, setCars] = useState<Car[]>([]);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [isEditing, setIsEditing] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'cars' | 'inquiries' | 'blog'>('cars');
+  const [activeTab, setActiveTab] = useState<'cars' | 'saleCars' | 'inquiries' | 'blog'>('cars');
 
   const [editForm, setEditForm] = useState<Partial<Car>>({});
   const [uploading, setUploading] = useState(false);
@@ -303,6 +306,8 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
       ...editForm,
       priceValue: numericPriceValue,
       pickupPrice: Number(editForm.pickupPrice || 0),
+      termMonths: Number(editForm.termMonths || 0),
+      buyoutPrice: Number(editForm.buyoutPrice || 0),
       updatedAt: serverTimestamp()
     };
 
@@ -397,6 +402,7 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
 
         const inquiryRef = doc(db, 'inquiries', id);
         await deleteDoc(inquiryRef);
+        await deleteInquiryPhotos(id).catch((e) => console.warn("[Admin] Fotky poptávky se nepodařilo smazat:", e));
         
         console.log(`[Admin] Poptávka ${id} úspěšně smazána z Firestore`);
         
@@ -548,7 +554,7 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
 
   if (authLoading) {
     return (
-      <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center">
+      <div className="fixed inset-0 z-[100] bg-black text-white flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-gold/20 border-t-gold rounded-full animate-spin" />
           <p className="text-gold font-bold tracking-[0.2em] text-[10px] uppercase">Ověřování...</p>
@@ -559,7 +565,7 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
 
   if (!user || !isAdmin) {
     return (
-      <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center p-6 sm:p-10">
+      <div className="fixed inset-0 z-[100] bg-black text-white flex items-center justify-center p-6 sm:p-10">
         <div className="max-w-md w-full bg-dark-card p-8 sm:p-10 rounded-3xl border border-white/10 text-center shadow-2xl">
           <div className="w-20 h-20 bg-gold/10 rounded-2xl flex items-center justify-center mx-auto mb-8">
             <LayoutDashboard className="w-10 h-10 text-gold" />
@@ -609,7 +615,7 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black overflow-y-auto">
+    <div className="fixed inset-0 z-[100] bg-black text-white overflow-y-auto">
       <div className="max-w-7xl mx-auto px-3 md:px-6 py-6 md:py-12">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 md:mb-12">
           <div>
@@ -660,9 +666,18 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
             className={`pb-4 px-3 md:px-2 text-xs md:text-sm font-bold tracking-widest uppercase transition-all relative whitespace-nowrap ${activeTab === 'cars' ? 'text-gold' : 'text-white/40 hover:text-white'}`}
           >
             <div className="flex items-center gap-1 md:gap-2">
-              <CarIcon className="w-4 h-4" /> <span>Vozidla</span>
+              <CarIcon className="w-4 h-4" /> <span>Vozidla (splátky)</span>
             </div>
             {activeTab === 'cars' && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />}
+          </button>
+          <button
+            onClick={() => setActiveTab('saleCars')}
+            className={`pb-4 px-3 md:px-2 text-xs md:text-sm font-bold tracking-widest uppercase transition-all relative whitespace-nowrap ${activeTab === 'saleCars' ? 'text-gold' : 'text-white/40 hover:text-white'}`}
+          >
+            <div className="flex items-center gap-1 md:gap-2">
+              <CarIcon className="w-4 h-4" /> <span>K prodeji</span>
+            </div>
+            {activeTab === 'saleCars' && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />}
           </button>
           <button
             onClick={() => setActiveTab('inquiries')}
@@ -760,6 +775,8 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
           </div>
         )}
 
+        {activeTab === 'saleCars' && <SaleCarsAdmin />}
+
         {activeTab === 'inquiries' && (
           <div className="grid grid-cols-1 gap-6">
             <div className="flex justify-between items-center mb-4">
@@ -780,6 +797,7 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                       {INQUIRY_STATUS_LABELS[inq.status as keyof typeof INQUIRY_STATUS_LABELS]?.icon || <HelpCircle />}
                     </div>
                     <div>
+                        <span className={`inline-block mb-2 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest ${inq.type === 'buyout' ? 'bg-blue-500/20 text-blue-300' : inq.type === 'cash' ? 'bg-green-500/20 text-green-300' : 'bg-gold/20 text-gold'}`}>{LEAD_TYPE_LABELS[inq.type || 'installment']}</span>
                         <h3 className="text-2xl font-bold mb-1">{inq.name}</h3>
                         <div className="flex flex-wrap items-center gap-3">
                             <span className="text-gold text-xs font-mono">{new Date(inq.createdAt?.seconds * 1000).toLocaleString('cs-CZ')}</span>
@@ -825,6 +843,23 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                             <CarIcon className="w-3 h-3" /> Poptávaný vůz
                         </div>
                         <div className="text-xl font-bold text-white mb-2">{inq.car || 'Nespecifikováno'}</div>
+                        {inq.details && (
+                          <dl className="grid grid-cols-2 gap-2 mb-4 text-sm">
+                            {Object.entries(inq.details).map(([k, v]) => (
+                              <div key={k}><dt className="text-white/40 text-[10px] uppercase tracking-widest">{k}</dt><dd className="font-bold">{v}</dd></div>
+                            ))}
+                          </dl>
+                        )}
+                        {!!inq.photoCount && <InquiryPhotos inquiryId={inq.id} count={inq.photoCount} />}
+                        {inq.photos && inq.photos.length > 0 && (
+                          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-4">
+                            {inq.photos.map((p, i) => (
+                              <a key={i} href={p} target="_blank" rel="noopener" download={`vykup-${inq.id}-${i + 1}.jpg`} className="aspect-square rounded-lg overflow-hidden block">
+                                <img src={p} alt={`Fotka ${i + 1}`} className="w-full h-full object-cover" />
+                              </a>
+                            ))}
+                          </div>
+                        )}
                         <div className="text-white text-lg font-medium leading-relaxed bg-white/5 p-6 rounded-2xl border border-white/10 italic">
                           {inq.message ? `"${inq.message}"` : 'Zákazník nezanechal zprávu.'}
                         </div>
@@ -1249,6 +1284,28 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                             </div>
                         </div>
                         <div className="space-y-2">
+                            <label className="text-[10px] uppercase tracking-widest text-gold font-bold ml-1">Délka nájmu (měsíce)</label>
+                            <input
+                                type="number"
+                                min={0}
+                                className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-gold text-sm"
+                                value={editForm.termMonths || ''}
+                                placeholder="nevyplněno = celková částka se nezobrazí"
+                                onChange={e => setEditForm({...editForm, termMonths: parseInt(e.target.value) || 0})}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] uppercase tracking-widest text-gold font-bold ml-1">Odkupní platba na konci (Kč)</label>
+                            <input
+                                type="number"
+                                min={0}
+                                className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-gold text-sm"
+                                value={editForm.buyoutPrice || ''}
+                                placeholder="jen pokud ji smlouva má"
+                                onChange={e => setEditForm({...editForm, buyoutPrice: parseInt(e.target.value) || 0})}
+                            />
+                        </div>
+                        <div className="space-y-2 col-span-1 sm:col-span-2">
                             <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold ml-1">Cena pro řazení</label>
                             <input
                                 type="number"

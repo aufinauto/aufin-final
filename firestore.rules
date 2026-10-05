@@ -52,6 +52,21 @@ service cloud.firestore {
       allow write, delete: if isAdmin();
     }
 
+    // V2: samostatný sklad „Auta k prodeji“ (oddělený od splátkových `cars`).
+    // POZOR: platí až po nasazení pravidel (firebase deploy --only firestore:rules).
+    match /saleCars/{carId} {
+      allow read: if true;
+      allow write, delete: if isAdmin();
+    }
+
+    // V2: fotky z výkupu – každá jako samostatný dokument navázaný na poptávku.
+    match /inquiryPhotos/{photoId} {
+      allow create: if request.resource.data.inquiryId is string
+        && request.resource.data.data is string
+        && request.resource.data.data.size() < 900000;
+      allow read, delete: if isAdmin();
+    }
+
     match /inquiries/{inquiryId} {
       allow create: if true; // Validation handled by isValidInquiry usually, but allow creating for now to debug
       allow read, update, delete: if isAdmin();

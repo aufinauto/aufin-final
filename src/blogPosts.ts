@@ -51,7 +51,7 @@ Klasickou akontaci, jakou znáte z leasingu, u nás neplatíte. Skládáte pouze
 
 ## Jak probíhá schválení
 
-Celý proces je rychlý. Vyberete si vůz z naší nabídky, ozvete se nám přes formulář nebo telefonicky a my obvykle do 30 minut potvrdíme schválení. Poté podepíšeme smlouvu o pronájmu vozu s možností odkupu a vy odjíždíte – klidně ještě týž den.
+Celý proces je rychlý. Vyberete si vůz z naší nabídky, ozvete se nám přes formulář nebo telefonicky a my obvykle do 30 minut potvrdíme schválení. Poté podepíšeme smlouvu o pronájmu vozu s možností odkupu, uhradíte počáteční platbu a odjíždíte – klidně ještě týž den.
 
 ## Co je dobré vědět předem
 

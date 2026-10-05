@@ -8,6 +8,8 @@
 export interface Faq {
   q: string;
   a: string;
+  /** true = jen na landing pages, ne na hlavní stránce */
+  hideOnHomepage?: boolean;
 }
 
 export const faqs: Faq[] = [
@@ -21,11 +23,11 @@ export const faqs: Faq[] = [
   },
   {
     q: "Jak rychle proběhne schválení?",
-    a: "Schválení zvládneme zpravidla do 30 minut. Po podpisu smlouvy můžete vozem odjet ještě týž den.",
+    a: "Schválení zvládneme zpravidla do 30 minut. Po podpisu smlouvy a uhrazení počáteční platby můžete vozem odjet ještě týž den.",
   },
   {
     q: "Kolik zaplatím při převzetí vozu?",
-    a: "Při převzetí vozidla skládáte jednorázovou částku uvedenou u každého vozu. Měsíční nájemné a cena při převzetí jsou vždy uvedené v detailu konkrétního auta.",
+    a: "Při převzetí vozidla skládáte jednorázovou počáteční platbu uvedenou u každého vozu. Měsíční nájemné a počáteční platba jsou vždy uvedené v detailu konkrétního auta.",
   },
   {
     q: "Jaké doklady k vyřízení potřebuji?",
@@ -34,5 +36,16 @@ export const faqs: Faq[] = [
   {
     q: "Mohu vůz po skončení splátek odkoupit?",
     a: "Ano. Jde o pronájem vozidla s možností odkupu – po uhrazení splátek vůz přechází do vašeho vlastnictví.",
+  },
+  // Nové dotazy přidávejte na konec – landing pages odkazují na indexy výše.
+  {
+    q: "Je auto opravdu bez akontace?",
+    hideOnHomepage: true,
+    a: "Neplatíte klasickou akontaci jako u leasingu, tedy procento z ceny vozu. Při převzetí ale skládáte počáteční platbu, jejíž výše je předem uvedená u každého vozu – bez ní vůz předat nelze. Dál platíte měsíční nájemné.",
+  },
+  {
+    q: "Je v měsíčním nájemném pojištění?",
+    hideOnHomepage: true,
+    a: "Ne. Pojistné se platí zvlášť, mimo měsíční nájemné.",
   },
 ];

@@ -4,13 +4,33 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Auta na splátky bez registru a bez příjmů | AUFIN AUTO Praha</title>
-    <meta name="description" content="Auto na splátky bez registru, bez akontace a bez doložení příjmů. Schválení do 30 minut – registry ani exekuci neřešíme. AUFIN AUTO Praha, vozy skladem." />
+    <meta name="description" content="Auto na splátky bez registru a bez doložení příjmů. Pronájem s možností odkupu: počáteční platba a měsíční nájemné předem u každého vozu. Schválení do 30 minut, AUFIN AUTO Praha." />
     <meta name="author" content="AUFIN AUTO" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#FFFFFF" />
+    <!--
+      Náhled vs. ostrý web: rozhoduje doména, ne přepínač. Mimo aufinauto.cz
+      se stránka označí noindex a nespustí se Google Analytics (seznam domén
+      musí odpovídat PRODUCTION_HOSTS v src/lib/siteEnv.ts).
+    -->
+    <script>
+      window.__AUFIN_PROD__ = ["www.aufinauto.cz", "aufinauto.cz"].indexOf(location.hostname) !== -1;
+      if (!window.__AUFIN_PROD__) {
+        document.querySelector('meta[name="robots"]').setAttribute("content", "noindex, nofollow");
+        // Náhled: zkušební tmavý vzhled (přepínač v liště nebo ?tema=tmave).
+        try {
+          var t = new URLSearchParams(location.search).get("tema");
+          if (t) localStorage.setItem("aufin-preview-theme", t === "tmave" ? "dark" : "light");
+          if (localStorage.getItem("aufin-preview-theme") === "dark") document.documentElement.dataset.theme = "dark";
+        } catch (e) {}
+      }
+    </script>
     <meta name="geo.region" content="CZ-10" />
     <meta name="geo.placename" content="Praha" />
     <link rel="canonical" href="https://www.aufinauto.cz/" />
+    <meta property="og:title" content="Auta na splátky bez registru a bez příjmů | AUFIN AUTO Praha" />
+    <meta property="og:description" content="Auto na splátky bez registru a bez doložení příjmů. Pronájem s možností odkupu: počáteční platba a měsíční nájemné předem u každého vozu. Schválení do 30 minut, AUFIN AUTO Praha." />
+    <meta property="og:url" content="https://www.aufinauto.cz/" />
 
     <!-- Open Graph / Twitter defaults (per-route přepisováno přes react-helmet) -->
     <meta property="og:site_name" content="AUFIN AUTO" />
@@ -22,12 +42,28 @@
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><path d=%22M20 75 L50 35 L80 75%22 stroke=%22%23FF6600%22 stroke-width=%2212%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/><path d=%22M15 40 C 30 20, 70 20, 85 40%22 stroke=%22black%22 stroke-width=%228%22 fill=%22none%22 stroke-linecap=%22round%22/></svg>">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <script type="module" crossorigin src="/assets/index-BylGSSeP.js"></script>
+    <!--
+      Google Analytics – stejně jako na původním webu: načte se hned, s cookies.
+      Jen na ostrém webu (náhled nezkresluje statistiky). Cookies lišta je pouze informační.
+    -->
+    <script>
+      if (window.__AUFIN_PROD__) {
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = function(){ dataLayer.push(arguments); };
+        var gt = document.createElement("script");
+        gt.async = true;
+        gt.src = "https://www.googletagmanager.com/gtag/js?id=G-102H474013";
+        document.head.appendChild(gt);
+        gtag("js", new Date());
+        gtag("config", "G-102H474013");
+      }
+    </script>
+    <script type="module" crossorigin src="/assets/index-CZGw7ztI.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/motion-qNatbADA.js">
-    <link rel="modulepreload" crossorigin href="/assets/firebase-B_DiO7YT.js">
+    <link rel="modulepreload" crossorigin href="/assets/firebase-Duqumimm.js">
     <link rel="modulepreload" crossorigin href="/assets/emailjs-DfBlkqaH.js">
-    <link rel="modulepreload" crossorigin href="/assets/icons-kHgiuLDU.js">
-    <link rel="stylesheet" crossorigin href="/assets/index-CPE3wWev.css">
+    <link rel="modulepreload" crossorigin href="/assets/icons-DnXK2sf0.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-B0ilfNnZ.css">
   </head>
   <body>
     <div id="root"></div>

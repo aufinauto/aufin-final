@@ -5,148 +5,31 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import nodemailer from "nodemailer";
-import { initializeApp } from "firebase/app";
-import { getFirestore, collection, getDocs } from "firebase/firestore";
-import { LANDING_PAGES } from "./src/landingConfig";
-import { STATIC_POSTS } from "./src/blogPosts";
+import { isProductionHost } from "./src/lib/siteEnv";
+import {
+  ROUTE_META,
+  NOT_FOUND_META,
+  PREVIEW_ROBOTS,
+  ROBOTS_TXT,
+  PREVIEW_ROBOTS_TXT,
+  injectMeta,
+  buildSitemapXml,
+} from "./seo";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const SITE_URL = "https://www.aufinauto.cz";
+// SEO data (ROUTE_META, sitemap, robots) jsou ve sdíleném ./seo.ts – stejná data
+// používá i statický build pro Vercel (scripts/prerender.ts).
 
-interface RouteMeta {
-  title: string;
-  description: string;
-  canonical: string;
-  robots?: string;
-}
-
-// Mapa reálných HTML rout → SEO meta. Server tyto hodnoty vkládá do
-// index.html ještě před spuštěním Reactu, takže je crawler vidí i bez JS.
-const ROUTE_META: Record<string, RouteMeta> = {
-  "/": {
-    title: "Auta na splátky bez registru a bez příjmů | AUFIN AUTO Praha",
-    description:
-      "Auto na splátky bez registru, bez akontace a bez doložení příjmů. Schválení do 30 minut – registry ani exekuci neřešíme. AUFIN AUTO Praha, vozy skladem.",
-    canonical: `${SITE_URL}/`,
-  },
-};
-for (const cfg of Object.values(LANDING_PAGES)) {
-  ROUTE_META[`/${cfg.slug}`] = {
-    title: cfg.title,
-    description: cfg.description,
-    canonical: `${SITE_URL}/${cfg.slug}`,
-  };
-}
-ROUTE_META["/ochrana-osobnich-udaju"] = {
-  title: "Ochrana osobních údajů (GDPR) | AUFIN AUTO",
-  description:
-    "Zásady zpracování a ochrany osobních údajů společnosti AUFI s.r.o. (AUFIN AUTO) v souladu s GDPR.",
-  canonical: `${SITE_URL}/ochrana-osobnich-udaju`,
-  robots: "noindex, follow",
-};
-ROUTE_META["/blog"] = {
-  title: "Blog – rádce o autech na splátky | AUFIN AUTO",
-  description:
-    "Rádce a praktické články o autech na splátky bez registru – podmínky, insolvence, smlouvy a tipy, jak na financování vozu.",
-  canonical: `${SITE_URL}/blog`,
-};
-
-const NOT_FOUND_META: RouteMeta = {
-  title: "Stránka nenalezena (404) | AUFIN AUTO",
-  description: "Požadovaná stránka neexistuje.",
-  canonical: SITE_URL,
-  robots: "noindex, follow",
-};
-
-const escapeAttr = (s: string) =>
-  s.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
-
-const slugify = (s: string) =>
-  s
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)+/g, "");
-
-interface SitemapUrl {
-  loc: string;
-  priority: string;
-  changefreq: string;
-}
-
-// Lazy inicializace Firestore – jen pro generování sitemap.xml.
-let firestore: ReturnType<typeof getFirestore> | null = null;
-function getDb() {
-  if (!firestore) {
-    const cfg = JSON.parse(
-      fs.readFileSync(path.join(__dirname, "firebase-applet-config.json"), "utf-8")
-    );
-    firestore = getFirestore(initializeApp(cfg), cfg.firestoreDatabaseId);
-  }
-  return firestore;
-}
-
-/** Sesbírá URL blogových článků a detailů vozů (Firestore + statické fallbacky). */
-async function getDynamicUrls(): Promise<SitemapUrl[]> {
-  const urls: SitemapUrl[] = [];
-
-  // Blogové články – deduplikováno podle slugu.
-  const postSlugs = new Set<string>();
-  try {
-    const snap = await getDocs(collection(getDb(), "posts"));
-    snap.forEach((d) => {
-      const p = d.data() as any;
-      if (p.slug && p.isPublished !== false) postSlugs.add(p.slug);
-    });
-  } catch {
-    /* offline / chybí oprávnění – použijí se jen statické články */
-  }
-  for (const p of STATIC_POSTS) if (p.isPublished !== false) postSlugs.add(p.slug);
-  postSlugs.forEach((slug) =>
-    urls.push({ loc: `${SITE_URL}/blog/${slug}`, priority: "0.7", changefreq: "monthly" })
-  );
-
-  // Detaily vozů.
-  try {
-    const snap = await getDocs(collection(getDb(), "cars"));
-    snap.forEach((d) => {
-      const c = d.data() as any;
-      if (c.isVisible === false) return;
-      const slug = c.seo?.slug || slugify(c.name || "");
-      if (slug) urls.push({ loc: `${SITE_URL}/auto/${slug}`, priority: "0.6", changefreq: "weekly" });
-    });
-  } catch {
-    /* offline – detaily vozů se do sitemapy nepřidají */
-  }
-  return urls;
-}
-
-/** Vloží do HTML šablony per-route <title>, description, canonical a OG tagy. */
-function injectMeta(html: string, meta: RouteMeta): string {
-  const og =
-    `<meta property="og:title" content="${escapeAttr(meta.title)}" />\n    ` +
-    `<meta property="og:description" content="${escapeAttr(meta.description)}" />\n    ` +
-    `<meta property="og:url" content="${meta.canonical}" />`;
-  let out = html
-    .replace(/<title>[\s\S]*?<\/title>/, `<title>${escapeAttr(meta.title)}</title>`)
-    .replace(
-      /<meta name="description" content="[^"]*"\s*\/>/,
-      `<meta name="description" content="${escapeAttr(meta.description)}" />`
-    )
-    .replace(
-      /<link rel="canonical" href="[^"]*"\s*\/>/,
-      `<link rel="canonical" href="${meta.canonical}" />\n    ${og}`
-    );
-  if (meta.robots) {
-    out = out.replace(
-      /<meta name="robots" content="[^"]*"\s*\/>/,
-      `<meta name="robots" content="${escapeAttr(meta.robots)}" />`
-    );
-  }
-  return out;
+/**
+ * Náhled vs. ostrý web podle skutečné domény požadavku (za proxy X-Forwarded-Host).
+ * Mimo PRODUCTION_HOSTS je vše noindex – nic se nepřepíná ručně, takže
+ * omezení náhledu nemůže omylem zůstat zapnuté na aufinauto.cz.
+ */
+function isPreviewRequest(req: express.Request): boolean {
+  const host = (req.headers["x-forwarded-host"] as string) || req.headers.host;
+  return !isProductionHost(host);
 }
 
 async function startServer() {
@@ -156,44 +39,23 @@ async function startServer() {
 
   app.use(express.json());
 
+  // Náhled (jiná než produkční doména): zákaz indexace hlavičkou pro VŠECHNY odpovědi.
+  app.use((req, res, next) => {
+    if (isPreviewRequest(req)) res.setHeader("X-Robots-Tag", PREVIEW_ROBOTS);
+    next();
+  });
+
   // SEO: robots.txt
   app.get("/robots.txt", (req, res) => {
     res.type("text/plain");
-    res.send(
-      "User-agent: *\n" +
-        "Allow: /\n" +
-        "Disallow: /api/\n" +
-        `Sitemap: ${SITE_URL}/sitemap.xml\n`
-    );
+    res.send(isPreviewRequest(req) ? PREVIEW_ROBOTS_TXT : ROBOTS_TXT);
   });
 
   // SEO: sitemap.xml — homepage, landing pages, blog (výpis i články) a detaily
   // vozů. Blog/vozy se načítají z Firestore, se statickými články jako fallback.
-  app.get("/sitemap.xml", async (req, res) => {
-    const today = new Date().toISOString().split("T")[0];
-    const urls: SitemapUrl[] = [
-      { loc: `${SITE_URL}/`, priority: "1.0", changefreq: "weekly" },
-      ...Object.values(LANDING_PAGES).map((c) => ({
-        loc: `${SITE_URL}/${c.slug}`,
-        priority: "0.9",
-        changefreq: "monthly",
-      })),
-      { loc: `${SITE_URL}/blog`, priority: "0.8", changefreq: "weekly" },
-      ...(await getDynamicUrls()),
-    ];
+  app.get("/sitemap.xml", async (_req, res) => {
     res.type("application/xml");
-    res.send(
-      `<?xml version="1.0" encoding="UTF-8"?>\n` +
-        `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-        urls
-          .map(
-            (u) =>
-              `  <url>\n    <loc>${u.loc}</loc>\n    <lastmod>${today}</lastmod>\n` +
-              `    <changefreq>${u.changefreq}</changefreq>\n    <priority>${u.priority}</priority>\n  </url>`
-          )
-          .join("\n") +
-        `\n</urlset>`
-    );
+    res.send(await buildSitemapXml());
   });
 
   // Nodemailer transporter – inicializuje se jednou při startu serveru.
@@ -215,6 +77,12 @@ async function startServer() {
 
   // API: kontaktní formulář
   app.post("/api/contact", async (req, res) => {
+    // Náhled nesmí posílat e-maily majiteli ani klientům.
+    if (isPreviewRequest(req)) {
+      console.log("[NÁHLED] /api/contact – e-mail neodeslán.");
+      res.json({ success: true, preview: true });
+      return;
+    }
     const { name, email, phone, car, message } = req.body;
 
     const now = new Date().toLocaleString("cs-CZ", { timeZone: "Europe/Prague" });
@@ -324,7 +192,7 @@ async function startServer() {
         res
           .status(200)
           .type("html")
-          .send(injectMeta(html, ROUTE_META[req.path]));
+          .send(injectMeta(html, ROUTE_META[req.path], isPreviewRequest(req)));
       } catch (err) {
         vite.ssrFixStacktrace(err as Error);
         next(err);
@@ -345,10 +213,10 @@ async function startServer() {
       const isKnown =
         !!meta || req.path.startsWith("/auto/") || req.path.startsWith("/blog/");
       if (isKnown) {
-        res.status(200).type("html").send(injectMeta(indexHtml, meta || ROUTE_META["/"]));
+        res.status(200).type("html").send(injectMeta(indexHtml, meta || ROUTE_META["/"], isPreviewRequest(req)));
       } else {
         // Skutečný HTTP 404 – žádné soft-404.
-        res.status(404).type("html").send(injectMeta(indexHtml, NOT_FOUND_META));
+        res.status(404).type("html").send(injectMeta(indexHtml, NOT_FOUND_META, isPreviewRequest(req)));
       }
     });
   }

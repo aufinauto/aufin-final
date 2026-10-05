@@ -11,6 +11,7 @@ import { Helmet } from "react-helmet-async";
 import { CheckCircle2, ChevronRight, Phone, Plus, Clock, ShieldCheck } from "lucide-react";
 import { LandingConfig } from "../landingConfig";
 import { faqs } from "../faqs";
+import { SiteHeader, SiteFooter, PHONE_DISPLAY, PHONE_HREF } from "./site/Chrome";
 
 const BASE_URL = "https://www.aufinauto.cz";
 
@@ -61,7 +62,7 @@ export default function LandingPage({ config }: { config: LandingConfig }) {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-gold selection:text-black">
+    <div className="min-h-screen bg-paper text-ink selection:bg-brand selection:text-ink">
       <Helmet>
         <html lang="cs" />
         <title>{config.title}</title>
@@ -79,44 +80,27 @@ export default function LandingPage({ config }: { config: LandingConfig }) {
         )}
       </Helmet>
 
-      {/* Navigace */}
-      <nav className="fixed top-6 left-1/2 -translate-x-1/2 w-[95%] max-w-7xl z-50">
-        <div className="bg-black/60 backdrop-blur-2xl border border-white/10 rounded-[32px] px-6 md:px-8 h-16 md:h-20 flex items-center justify-between shadow-2xl shadow-gold/10">
-          <a href="/" className="flex flex-col leading-none">
-            <span className="text-xl font-black tracking-tighter uppercase">AUFIN</span>
-            <span className="text-gold text-xs font-bold tracking-[0.3em]">AUTO</span>
-          </a>
-          <div className="hidden md:flex items-center gap-8 text-sm font-medium uppercase tracking-widest text-white/70">
-            <a href="/#nabidka-aut" className="hover:text-gold transition-colors">Nabídka aut</a>
-            <a href="/#jak-to-funguje" className="hover:text-gold transition-colors">Jak to funguje</a>
-            <a href="/#caste-dotazy" className="hover:text-gold transition-colors">Časté dotazy</a>
-          </div>
-          <a href="#kontakt" className="bg-gold text-black px-6 py-2.5 rounded-full text-sm font-bold hover:bg-white transition-all duration-300">
-            CHCI AUTO
-          </a>
-        </div>
-      </nav>
+      <SiteHeader />
 
       {/* Hero */}
-      <section className="relative pt-40 md:pt-52 pb-20 px-6 overflow-hidden">
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-gold/5 blur-[140px] -z-10" />
-        <div className="max-w-4xl mx-auto text-center">
+      <section className="relative pt-12 md:pt-20 pb-14 px-4 sm:px-6 overflow-hidden bg-sand">
+                <div className="max-w-4xl mx-auto text-center">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
-            <span className="inline-block px-4 py-1.5 rounded-full bg-gold/10 border border-gold/20 text-gold text-xs font-bold tracking-[0.2em] uppercase mb-6">
+            <span className="inline-block px-3 py-1 rounded-full bg-brand-soft text-brand-deep text-xs font-bold tracking-wider uppercase mb-5">
               {config.badge}
             </span>
-            <h1 className="text-4xl md:text-7xl font-bold tracking-tight mb-8 leading-[0.95]">
+            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6 leading-[1.05]">
               {config.h1}
             </h1>
-            <p className="text-lg md:text-xl text-white/60 max-w-2xl mx-auto mb-10 font-light">
+            <p className="text-lg md:text-xl text-ink/75 max-w-2xl mx-auto mb-8">
               {config.lead}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <a href="/#nabidka-aut" className="w-full sm:w-auto bg-white text-black px-10 py-4 rounded-full font-bold text-lg hover:bg-gold transition-all duration-300 flex items-center justify-center gap-2">
-                PROHLÉDNOUT VOZY <ChevronRight className="w-5 h-5" />
+              <a href="/#nabidka-aut" className="btn-primary w-full sm:w-auto text-lg">
+                Prohlédnout auta na splátky <ChevronRight className="w-5 h-5" />
               </a>
-              <a href="#kontakt" className="w-full sm:w-auto border border-white/20 hover:border-gold px-10 py-4 rounded-full font-bold text-lg transition-all duration-300">
-                NEZÁVAZNÁ POPTÁVKA
+              <a href="#kontakt" className="btn-secondary w-full sm:w-auto text-lg">
+                Nezávazná poptávka
               </a>
             </div>
           </motion.div>
@@ -124,24 +108,24 @@ export default function LandingPage({ config }: { config: LandingConfig }) {
       </section>
 
       {/* Výhody */}
-      <section className="py-16 px-6">
+      <section className="py-12 md:py-16 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-4">
           {config.benefits.map((b, i) => (
-            <div key={i} className="flex items-start gap-4 bg-dark-card p-6 rounded-2xl border border-white/5">
-              <CheckCircle2 className="w-6 h-6 text-gold shrink-0" />
-              <span className="text-white/80 font-light">{b}</span>
+            <div key={i} className="flex items-start gap-4 bg-card p-5 rounded-2xl border border-line">
+              <CheckCircle2 className="w-6 h-6 text-brand-deep shrink-0" />
+              <span className="text-ink/85">{b}</span>
             </div>
           ))}
         </div>
       </section>
 
       {/* Textové sekce */}
-      <section className="py-16 px-6">
+      <section className="py-12 md:py-16 px-4 sm:px-6">
         <div className="max-w-3xl mx-auto space-y-14">
           {config.sections.map((s, i) => (
             <div key={i}>
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-6">{s.h2}</h2>
-              <div className="space-y-4 text-white/60 font-light leading-relaxed">
+              <h2 className="text-2xl md:text-4xl font-extrabold tracking-tight mb-5">{s.h2}</h2>
+              <div className="space-y-4 text-ink/75 text-[17px] leading-relaxed">
                 {s.paragraphs.map((p, j) => (
                   <p key={j}>{p}</p>
                 ))}
@@ -152,24 +136,24 @@ export default function LandingPage({ config }: { config: LandingConfig }) {
       </section>
 
       {/* Rychlé schválení */}
-      <section className="py-16 px-6">
+      <section className="py-12 md:py-16 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="bg-dark-card p-10 rounded-3xl border border-white/5 flex gap-6 items-start">
-            <div className="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center shrink-0">
-              <Clock className="text-gold w-6 h-6" />
+          <div className="bg-card p-6 md:p-8 rounded-2xl border border-line flex gap-5 items-start">
+            <div className="w-12 h-12 rounded-full bg-brand-soft flex items-center justify-center shrink-0">
+              <Clock className="text-brand-deep w-6 h-6" />
             </div>
             <div>
               <h3 className="text-xl font-bold mb-2">Schválení do 30 minut</h3>
-              <p className="text-white/50 font-light">Nečekáte na vyjádření banky. Vyřízení je rychlé a po podpisu smlouvy odjíždíte ještě dnes.</p>
+              <p className="text-ink/70">Nečekáte na vyjádření banky. Po podpisu smlouvy a uhrazení počáteční platby můžete odjet ještě týž den.</p>
             </div>
           </div>
-          <div className="bg-dark-card p-10 rounded-3xl border border-white/5 flex gap-6 items-start">
-            <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
-              <ShieldCheck className="text-green-500 w-6 h-6" />
+          <div className="bg-card p-6 md:p-8 rounded-2xl border border-line flex gap-5 items-start">
+            <div className="w-12 h-12 rounded-full bg-brand-soft flex items-center justify-center shrink-0">
+              <ShieldCheck className="text-brand-deep w-6 h-6" />
             </div>
             <div>
               <h3 className="text-xl font-bold mb-2">Individuální posouzení</h3>
-              <p className="text-white/50 font-light">Každého klienta posuzujeme zvlášť podle aktuální situace – ne podle starých záznamů.</p>
+              <p className="text-ink/70">Každého klienta posuzujeme zvlášť podle aktuální situace – ne podle starých záznamů.</p>
             </div>
           </div>
         </div>
@@ -177,21 +161,21 @@ export default function LandingPage({ config }: { config: LandingConfig }) {
 
       {/* FAQ */}
       {pageFaqs.length > 0 && (
-        <section className="py-16 px-6">
+        <section className="py-12 md:py-16 px-4 sm:px-6">
           <div className="max-w-3xl mx-auto">
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-10 text-center">Časté dotazy</h2>
+            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-8 text-center">Časté dotazy</h2>
             <div className="space-y-3">
               {pageFaqs.map((faq, i) => (
-                <div key={i} className="bg-dark-card rounded-2xl border border-white/5 overflow-hidden">
+                <div key={i} className="bg-card rounded-2xl border border-line overflow-hidden">
                   <button
                     onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                    className="w-full flex items-center justify-between gap-4 p-6 text-left"
+                    className="w-full flex items-center justify-between gap-4 p-5 text-left"
                   >
-                    <span className="font-bold text-lg">{faq.q}</span>
-                    <Plus className={`w-5 h-5 text-gold shrink-0 transition-transform duration-300 ${openFaq === i ? "rotate-45" : ""}`} />
+                    <span className="font-bold text-[17px]">{faq.q}</span>
+                    <Plus className={`w-5 h-5 text-brand-deep shrink-0 transition-transform duration-300 ${openFaq === i ? "rotate-45" : ""}`} />
                   </button>
                   {openFaq === i && (
-                    <div className="px-6 pb-6 text-white/50 font-light leading-relaxed">{faq.a}</div>
+                    <div className="px-5 pb-5 text-ink/75 leading-relaxed">{faq.a}</div>
                   )}
                 </div>
               ))}
@@ -201,46 +185,25 @@ export default function LandingPage({ config }: { config: LandingConfig }) {
       )}
 
       {/* CTA / Kontakt */}
-      <section id="kontakt" className="py-24 px-6">
-        <div className="max-w-3xl mx-auto bg-dark-card rounded-[40px] border border-white/5 p-12 md:p-16 text-center">
-          <span className="text-gold font-bold tracking-widest text-sm uppercase mb-4 block">Kontaktujte nás</span>
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">Získejte auto ještě dnes</h2>
-          <p className="text-white/50 font-light mb-10 max-w-xl mx-auto">
+      <section id="kontakt" className="py-16 md:py-20 px-4 sm:px-6">
+        <div className="max-w-3xl mx-auto bg-sand rounded-3xl border border-line p-6 sm:p-12 text-center">
+          <span className="text-brand-deep font-bold tracking-wider text-sm uppercase mb-2 block">Kontaktujte nás</span>
+          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4">Nezávazná poptávka</h2>
+          <p className="text-ink/70 mb-8 max-w-xl mx-auto">
             Vyplňte nezávaznou poptávku na hlavní stránce nebo nám rovnou zavolejte. Ozveme se vám zpět do 30 minut.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a href="/#formular" className="w-full sm:w-auto bg-gold text-black px-10 py-4 rounded-full font-bold text-lg hover:bg-white transition-all duration-300 flex items-center justify-center gap-2">
-              ODESLAT POPTÁVKU <ChevronRight className="w-5 h-5" />
+            <a href="/#formular" className="btn-primary w-full sm:w-auto text-lg">
+              Odeslat poptávku <ChevronRight className="w-5 h-5" />
             </a>
-            <a href="tel:+420731562211" className="w-full sm:w-auto border border-white/20 hover:border-gold px-10 py-4 rounded-full font-bold text-lg transition-all duration-300 flex items-center justify-center gap-2">
-              <Phone className="w-5 h-5" /> +420 731 562 211
+            <a href={PHONE_HREF} className="btn-secondary w-full sm:w-auto text-lg">
+              <Phone className="w-5 h-5" /> {PHONE_DISPLAY}
             </a>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-16 border-t border-white/10 bg-black px-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start gap-8 text-sm text-white/40 font-light">
-          <div className="flex flex-col leading-none">
-            <span className="text-xl font-black tracking-tighter uppercase text-white">AUFIN</span>
-            <span className="text-gold text-sm font-bold tracking-[0.2em]">AUTO</span>
-          </div>
-          <div className="space-y-1">
-            <p className="font-bold text-white/60">AUFI s.r.o.</p>
-            <p>IČO: 24398071</p>
-            <p>Humpolecká 1886/26, Krč, 140 00 Praha</p>
-          </div>
-          <nav className="flex flex-col gap-2">
-            <a href="/auta-na-splatky-bez-registru" className="hover:text-gold transition-colors">Auta na splátky bez registru</a>
-            <a href="/auto-na-splatky-bez-akontace" className="hover:text-gold transition-colors">Auto na splátky bez akontace</a>
-            <a href="/auto-na-splatky-s-exekuci" className="hover:text-gold transition-colors">Auto na splátky i s exekucí</a>
-          </nav>
-        </div>
-        <div className="max-w-7xl mx-auto pt-8 mt-8 border-t border-white/5 text-white/20 text-xs">
-          © {new Date().getFullYear()} AUFI s.r.o. Všechna práva vyhrazena.
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

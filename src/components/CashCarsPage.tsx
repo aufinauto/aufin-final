@@ -5,16 +5,17 @@
  * /auta-k-prodeji – přímý prodej vozů za celou cenu (hotově nebo převodem).
  * Samostatný sklad: Firestore kolekce `saleCars`, oddělená od splátkových `cars`.
  * Splátkové vozy se zde nezobrazují a u vozů se neuvádí splátková varianta.
+ * Každý vůz má vlastní stránku /auta-k-prodeji/<slug> (SaleCarDetailPage).
  */
 
 import React, { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { collection, onSnapshot } from "firebase/firestore";
-import { ArrowRight, BadgeCheck, Calendar, ChevronRight, Fuel, Gauge, Mail, Phone, Plus, RefreshCw, Settings, ShieldCheck, X } from "lucide-react";
-import { db } from "../lib/firebase";
+import { ArrowRight, BadgeCheck, ChevronRight, Plus, RefreshCw, ShieldCheck } from "lucide-react";
+import { loadPublished } from "../lib/siteData";
 import { SITE_URL } from "../lib/siteEnv";
 import { submitLead } from "../lib/leads";
 import { formatCzk } from "../lib/installment";
+import { formatKm, saleCarPath } from "../lib/saleCars";
 import type { SaleCar } from "../types";
 import { SiteHeader, SiteFooter, WhatsAppButton, SubmitSuccess, SUBMIT_ERROR, PHONE_DISPLAY, PHONE_HREF, EMAIL, ContactCards } from "./site/Chrome";
 
@@ -61,38 +62,28 @@ const SALE_FAQS: { q: string; a: string; link?: { href: string; label: string } 
 export default function CashCarsPage() {
   const [cars, setCars] = useState<SaleCar[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState<SaleCar | null>(null);
   const [form, setForm] = useState({ name: "", phone: "", email: "", car: "", message: "" });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState<null | { preview: boolean }>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   useEffect(() => {
-    const unsub = onSnapshot(
-      collection(db, "saleCars"),
-      (snap) => {
-        const list = snap.docs
-          .map((d) => ({ id: d.id, ...d.data() } as SaleCar))
-          .filter((c) => c.isVisible !== false)
-          .sort((a, b) => Number(!!a.isSold) - Number(!!b.isSold) || (a.price || 0) - (b.price || 0));
-        setCars(list);
-        setLoading(false);
-      },
-      // Kolekce ještě nemusí existovat / nemít pravidla – zobrazí se prázdná nabídka.
-      () => setLoading(false)
-    );
-    return () => unsub();
+    // Publikovaná nabídka ze souboru /data/sale-cars.json (bez čtení Firestore), viz lib/siteData.ts.
+    let alive = true;
+    loadPublished<SaleCar>("saleCars")
+      .then((all) => {
+        if (!alive) return;
+        setCars(
+          all
+            .filter((c) => c.isVisible !== false)
+            .sort((a, b) => Number(!!a.isSold) - Number(!!b.isSold) || (a.price || 0) - (b.price || 0))
+        );
+      })
+      // Při chybě se zobrazí prázdná nabídka s kontaktem.
+      .catch((err) => console.error("Nabídku aut k prodeji se nepodařilo načíst:", err))
+      .finally(() => alive && setLoading(false));
+    return () => { alive = false; };
   }, []);
-
-  useEffect(() => {
-    document.body.style.overflow = selected ? "hidden" : "";
-  }, [selected]);
-
-  const inquire = (car: SaleCar) => {
-    setForm((f) => ({ ...f, car: car.name }));
-    setSelected(null);
-    document.getElementById("poptavka")?.scrollIntoView({ behavior: "smooth" });
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -194,7 +185,7 @@ export default function CashCarsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {cars.map((car) => (
                   <article key={car.id} className={`bg-card rounded-2xl border border-line overflow-hidden flex flex-col ${car.isSold ? "opacity-60" : "hover:shadow-lg transition-shadow"}`}>
-                    <button type="button" disabled={car.isSold} onClick={() => setSelected(car)} className="text-left flex flex-col flex-1 disabled:cursor-default">
+                    <a href={car.isSold ? undefined : saleCarPath(car)} aria-disabled={car.isSold || undefined} className="flex flex-col flex-1">
                       <div className="relative aspect-[4/3] bg-sand overflow-hidden">
                         {car.image && <img src={car.image} alt={`${car.name}, ${car.details?.year}`} loading="lazy" className="w-full h-full object-cover" referrerPolicy="no-referrer" />}
                         {car.isSold && <span className="absolute top-3 left-3 px-3 py-1 bg-night text-white text-xs font-bold uppercase rounded-full">Prodáno</span>}
@@ -202,7 +193,7 @@ export default function CashCarsPage() {
                       <div className="p-5 flex flex-col flex-1">
                         <h3 className="text-lg font-bold">{car.name}</h3>
                         <div className="text-sm text-ink/60 mb-4">
-                          {[car.details?.year, car.details?.mileage && `${car.details.mileage} km`, car.details?.fuel, car.details?.transmission].filter(Boolean).join(" · ")}
+                          {[car.details?.year, formatKm(car.details?.mileage), car.details?.fuel, car.details?.transmission].filter(Boolean).join(" · ")}
                         </div>
                         <div className="mt-auto pt-4 border-t border-line flex items-end justify-between gap-3">
                           <div>
@@ -212,7 +203,7 @@ export default function CashCarsPage() {
                           {!car.isSold && <span className="text-sm font-bold text-brand-deep inline-flex items-center">Detail <ChevronRight className="w-4 h-4" /></span>}
                         </div>
                       </div>
-                    </button>
+                    </a>
                   </article>
                 ))}
               </div>
@@ -348,55 +339,6 @@ export default function CashCarsPage() {
 
       <SiteFooter />
       <WhatsAppButton text="Dobrý den, mám zájem o auto k prodeji od AUFIN AUTO." />
-
-      {selected && (
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-6" role="dialog" aria-modal="true" aria-labelledby="sale-title">
-          <div className="absolute inset-0 bg-night/70 backdrop-blur-sm" onClick={() => setSelected(null)} />
-          <div className="relative w-full max-w-4xl bg-card rounded-t-3xl sm:rounded-3xl max-h-[92dvh] overflow-y-auto">
-            <button onClick={() => setSelected(null)} aria-label="Zavřít detail" className="absolute top-4 right-4 z-10 w-11 h-11 rounded-full bg-card/90 shadow flex items-center justify-center hover:bg-brand">
-              <X className="w-5 h-5" />
-            </button>
-            <div className="grid md:grid-cols-2">
-              <div>
-                {selected.image && <img src={selected.image} alt={selected.name} className="w-full aspect-[4/3] object-cover" referrerPolicy="no-referrer" />}
-                {selected.gallery?.length > 0 && (
-                  <div className="grid grid-cols-4 gap-2 p-3">
-                    {selected.gallery.slice(0, 8).map((g, i) => (
-                      <a key={i} href={g} target="_blank" rel="noopener" className="aspect-video rounded-lg overflow-hidden block">
-                        <img src={g} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                      </a>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div className="p-5 sm:p-8">
-                <div className="text-brand-deep font-bold text-xs uppercase tracking-wider mb-2">Auto k prodeji</div>
-                <h2 id="sale-title" className="text-2xl md:text-3xl font-extrabold mb-4 pr-10">{selected.name}</h2>
-                <div className="rounded-2xl bg-brand-soft p-4 mb-6">
-                  <div className="text-sm text-ink/70">Kupní cena (platba najednou, hotově nebo převodem)</div>
-                  <div className="text-3xl font-extrabold">{selected.price ? formatCzk(selected.price) : "Na dotaz"}</div>
-                </div>
-                <button onClick={() => inquire(selected)} className="btn-primary w-full text-lg mb-6">Mám zájem o tento vůz</button>
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  {[
-                    { icon: Calendar, label: "Rok", value: selected.details?.year },
-                    { icon: Gauge, label: "Nájezd", value: selected.details?.mileage && `${selected.details.mileage} km` },
-                    { icon: Fuel, label: "Palivo", value: selected.details?.fuel },
-                    { icon: Settings, label: "Převodovka", value: selected.details?.transmission },
-                  ].map(({ icon: Icon, label, value }) => (
-                    <div key={label} className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-sand flex items-center justify-center shrink-0"><Icon className="w-5 h-5 text-brand-deep" /></div>
-                      <div><div className="text-xs text-ink/60">{label}</div><div className="text-sm font-bold">{value || "—"}</div></div>
-                    </div>
-                  ))}
-                </div>
-                {selected.equipment && <p className="text-[15px] text-ink/75 whitespace-pre-line mb-4"><strong className="text-ink">Výbava: </strong>{selected.equipment}</p>}
-                {selected.description && <p className="text-[15px] text-ink/75 whitespace-pre-line">{selected.description}</p>}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

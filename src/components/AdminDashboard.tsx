@@ -8,12 +8,14 @@ import {
   query, 
   orderBy,
   serverTimestamp,
-  onSnapshot
+  onSnapshot,
+  limit
 } from 'firebase/firestore';
 import { db, auth, googleProvider } from '../lib/firebase';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { Car, Inquiry, BlogPost } from '../types';
 import SaleCarsAdmin from './SaleCarsAdmin';
+import PublishBar from './PublishBar';
 import InquiryPhotos, { deleteInquiryPhotos } from './InquiryPhotos';
 import { LEAD_TYPE_LABELS } from '../lib/leads';
 import { 
@@ -132,7 +134,8 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
         alert("Chyba při načítání vozů: " + err.message);
       });
 
-      const qInq = query(collection(db, 'inquiries'), orderBy('createdAt', 'desc'));
+      // Jen posledních 100 poptávek – každé otevření administrace by jinak četlo celou historii (denní limit čtení).
+      const qInq = query(collection(db, 'inquiries'), orderBy('createdAt', 'desc'), limit(100));
       const unsubInq = onSnapshot(qInq, (snapshot) => {
         setInquiries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Inquiry)));
       }, (err) => {
@@ -659,6 +662,8 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
             </button>
           </div>
         </div>
+
+        <PublishBar />
 
         <div className="flex gap-2 md:gap-4 mb-8 md:mb-10 border-b border-white/5 overflow-x-auto">
           <button

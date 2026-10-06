@@ -10,6 +10,8 @@ import { initializeApp } from "firebase/app";
 import { getFirestore, collection, getDocs } from "firebase/firestore";
 import { LANDING_PAGES } from "./src/landingConfig";
 import { STATIC_POSTS } from "./src/blogPosts";
+import { formatKm, saleCarPath } from "./src/lib/saleCars";
+import { formatCzk } from "./src/lib/installment";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -134,21 +136,44 @@ export interface DynamicPage {
   changefreq: string;
 }
 
-/** Blogové články (Firestore + statické) a detaily vozů – pro sitemap i prerender. */
-export async function getDynamicPages(): Promise<DynamicPage[]> {
+/** Data webu z Firestore. `errors` = kolekce, které se nepodařilo přečíst. */
+export interface SiteData {
+  cars: any[];
+  saleCars: any[];
+  posts: any[];
+  errors: Record<string, string>;
+}
+
+/** Firestore Timestamp → ISO text (aby šel uložit do JSON). */
+function plain(value: any): any {
+  if (value && typeof value.toDate === "function") return value.toDate().toISOString();
+  if (Array.isArray(value)) return value.map(plain);
+  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, plain(v)]));
+  return value;
+}
+
+/** Jedno čtení všech veřejných kolekcí – používá build (data pro web, prerender, sitemap) i server. */
+export async function loadSiteData(): Promise<SiteData> {
+  const data: SiteData = { cars: [], saleCars: [], posts: [], errors: {} };
+  for (const name of ["cars", "saleCars", "posts"] as const) {
+    try {
+      const snap = await getDocs(collection(getDb(), name));
+      data[name] = snap.docs.map((d) => plain({ id: d.id, ...d.data() }));
+    } catch (err: any) {
+      data.errors[name] = err?.code || err?.message || String(err);
+    }
+  }
+  return data;
+}
+
+/** Blogové články (Firestore + statické), detaily vozů a auta k prodeji – pro sitemap i prerender. */
+export async function getDynamicPages(data?: SiteData): Promise<DynamicPage[]> {
+  const { cars, saleCars, posts: dbPosts } = data ?? (await loadSiteData());
   const pages: DynamicPage[] = [];
 
   // Blogové články – deduplikováno podle slugu, Firestore má přednost.
   const posts = new Map<string, any>();
-  try {
-    const snap = await getDocs(collection(getDb(), "posts"));
-    snap.forEach((d) => {
-      const p = d.data() as any;
-      if (p.slug && p.isPublished !== false) posts.set(p.slug, p);
-    });
-  } catch {
-    /* offline / chybí oprávnění – použijí se jen statické články */
-  }
+  for (const p of dbPosts) if (p.slug && p.isPublished !== false) posts.set(p.slug, p);
   for (const p of STATIC_POSTS) if (p.isPublished !== false && !posts.has(p.slug)) posts.set(p.slug, p);
   posts.forEach((p, slug) =>
     pages.push({
@@ -164,31 +189,43 @@ export async function getDynamicPages(): Promise<DynamicPage[]> {
   );
 
   // Detaily vozů na splátky.
-  try {
-    const snap = await getDocs(collection(getDb(), "cars"));
-    snap.forEach((d) => {
-      const c = d.data() as any;
-      if (c.isVisible === false) return;
-      const slug = c.seo?.slug || slugify(c.name || "");
-      if (!slug) return;
-      pages.push({
-        path: `/auto/${slug}`,
-        meta: {
-          // Stejně jako v App.tsx (Helmet), ať se meta po načtení Reactu nemění.
-          title: c.seo?.title || `${c.name} na splátky | AUFIN AUTO`,
-          description:
-            c.seo?.description ||
-            (c.description ? String(c.description).substring(0, 160) : ROUTE_META["/"].description),
-          canonical: `${SITE_URL}/auto/${slug}`,
-        },
-        priority: "0.6",
-        changefreq: "weekly",
-      });
+  for (const c of cars) {
+    if (c.isVisible === false) continue;
+    const slug = c.seo?.slug || slugify(c.name || "");
+    if (!slug) continue;
+    pages.push({
+      path: `/auto/${slug}`,
+      meta: {
+        // Stejně jako v App.tsx (Helmet), ať se meta po načtení Reactu nemění.
+        title: c.seo?.title || `${c.name} na splátky | AUFIN AUTO`,
+        description: c.seo?.description || (c.description ? String(c.description).substring(0, 160) : ROUTE_META["/"].description),
+        canonical: `${SITE_URL}/auto/${slug}`,
+      },
+      priority: "0.6",
+      changefreq: "weekly",
     });
-  } catch {
-    /* offline – detaily vozů se nepřidají */
   }
-  return pages;
+
+  // Auta k prodeji – vlastní stránky; prodané vozy se do sitemap nedávají (jsou noindex).
+  for (const c of saleCars) {
+    if (c.isVisible === false || c.isSold) continue;
+    const summary = [c.details?.year, formatKm(c.details?.mileage), c.details?.fuel, c.details?.transmission].filter(Boolean).join(" · ");
+    // Stejně jako v SaleCarDetailPage (Helmet), ať se meta po načtení Reactu nemění.
+    pages.push({
+      path: saleCarPath(c),
+      meta: {
+        title: `${c.name}${c.details?.year ? ` (${c.details.year})` : ""} na prodej | AUFIN AUTO`,
+        description: `${c.name} na prodej v Praze${summary ? ` – ${summary}` : ""}. Cena ${c.price ? formatCzk(c.price) : "na dotaz"}. Prověřený vůz od AUFIN AUTO.`,
+        canonical: `${SITE_URL}${saleCarPath(c)}`,
+      },
+      priority: "0.5",
+      changefreq: "weekly",
+    });
+  }
+
+  // Dva vozy se stejným názvem by měly stejnou URL – do sitemap/prerenderu jen jednou.
+  const seen = new Set<string>();
+  return pages.filter((p) => !seen.has(p.path) && seen.add(p.path));
 }
 
 /** Celá sitemap.xml – statické stránky + články + vozy. */

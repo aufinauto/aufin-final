@@ -11,6 +11,7 @@ import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimest
 import { Edit, Eye, EyeOff, Plus, Save, Trash2, X } from "lucide-react";
 import { db } from "../lib/firebase";
 import { compressImage } from "../lib/images";
+import { saleCarPath } from "../lib/saleCars";
 import type { SaleCar } from "../types";
 
 const EMPTY: Omit<SaleCar, "id"> = {
@@ -118,7 +119,10 @@ export default function SaleCarsAdmin() {
             <div className="p-6 flex-1 flex flex-col">
               <h3 className="text-xl font-bold mb-1">{car.name}</h3>
               <p className="text-white/40 text-sm mb-4">{car.brand} • {car.details?.year} • {car.details?.mileage} km</p>
-              <div className="text-gold font-bold text-lg mb-4">{car.price?.toLocaleString("cs-CZ")} Kč {car.isSold && <span className="text-xs text-red-400 ml-2">PRODÁNO</span>}</div>
+              <div className="text-gold font-bold text-lg mb-2">{car.price?.toLocaleString("cs-CZ")} Kč {car.isSold && <span className="text-xs text-red-400 ml-2">PRODÁNO</span>}</div>
+              <a href={saleCarPath(car)} target="_blank" rel="noopener" className="text-sm text-white/50 hover:text-gold underline underline-offset-2 mb-4 break-all">
+                Stránka na webu: {saleCarPath(car)}
+              </a>
               <div className="flex gap-2 mt-auto">
                 <button onClick={() => { const { id, ...rest } = car; setForm({ ...EMPTY, ...rest, details: { ...EMPTY.details, ...rest.details } }); setEditing(id); }}
                   className="flex-1 bg-white/5 hover:bg-white/10 rounded-xl h-12 font-bold flex items-center justify-center gap-2"><Edit className="w-4 h-4" /> UPRAVIT</button>

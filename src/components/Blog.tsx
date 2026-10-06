@@ -10,9 +10,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { motion } from "motion/react";
 import { Helmet } from "react-helmet-async";
-import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 import { ChevronRight, ChevronLeft, Phone } from "lucide-react";
-import { db } from "../lib/firebase";
+import { loadPublished } from "../lib/siteData";
 import { BlogPost } from "../types";
 import { STATIC_POSTS } from "../blogPosts";
 import { SiteHeader, SiteFooter, PHONE_DISPLAY, PHONE_HREF } from "./site/Chrome";
@@ -63,17 +62,14 @@ export default function Blog() {
   const [posts, setPosts] = useState<BlogPost[]>(STATIC_POSTS);
 
   useEffect(() => {
-    const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
-    const unsub = onSnapshot(
-      q,
-      (snap) => {
-        if (!snap.empty) {
-          setPosts(snap.docs.map((d) => ({ id: d.id, ...d.data() } as BlogPost)));
-        }
-      },
-      () => {/* offline / chybí oprávnění – ponecháme statické články */}
-    );
-    return () => unsub();
+    // Publikované články ze souboru /data/posts.json (bez čtení Firestore), viz lib/siteData.ts.
+    let alive = true;
+    loadPublished<BlogPost>("posts")
+      .then((list) => {
+        if (alive && list.length) setPosts(list);
+      })
+      .catch(() => {/* offline / chybí oprávnění – ponecháme statické články */});
+    return () => { alive = false; };
   }, []);
 
   const published = posts.filter((p) => p.isPublished !== false);

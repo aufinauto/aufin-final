@@ -211,7 +211,7 @@ async function startServer() {
     app.get("*", (req, res) => {
       const meta = ROUTE_META[req.path];
       const isKnown =
-        !!meta || req.path.startsWith("/auto/") || req.path.startsWith("/blog/");
+        !!meta || req.path.startsWith("/auto/") || req.path.startsWith("/blog/") || req.path.startsWith("/auta-k-prodeji/");
       if (isKnown) {
         res.status(200).type("html").send(injectMeta(indexHtml, meta || ROUTE_META["/"], isPreviewRequest(req)));
       } else {

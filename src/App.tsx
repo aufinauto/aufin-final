@@ -27,8 +27,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import React, { useState, useEffect, useRef, lazy, Suspense } from "react";
-import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
-import { db } from "./lib/firebase";
+import { loadPublished } from "./lib/siteData";
 import { Car as CarType } from "./types";
 import { faqs } from "./faqs";
 
@@ -57,6 +56,7 @@ const PrivacyPage = lazy(() => import("./components/PrivacyPage"));
 const NotFound = lazy(() => import("./components/NotFound"));
 const Blog = lazy(() => import("./components/Blog"));
 const CashCarsPage = lazy(() => import("./components/CashCarsPage"));
+const SaleCarDetailPage = lazy(() => import("./components/SaleCarDetailPage"));
 const BuyoutPage = lazy(() => import("./components/BuyoutPage"));
 const ContactPage = lazy(() => import("./components/ContactPage"));
 
@@ -197,24 +197,22 @@ export default function App() {
   };
 
   useEffect(() => {
-    const q = query(collection(db, "cars"), orderBy("priceValue", "asc"));
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        if (!snapshot.empty) {
-          setCars(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as CarType)));
-        }
+    // Publikovaná nabídka ze souboru /data/cars.json (bez čtení Firestore), viz lib/siteData.ts.
+    let alive = true;
+    loadPublished<CarType>("cars")
+      .then((list) => {
+        if (!alive) return;
+        setCars([...list].sort((x, y) => (Number(x.priceValue) || 0) - (Number(y.priceValue) || 0)));
         setCarsLoading(false);
-      },
-      (err) => {
-        // Např. vyčerpaný denní limit Firestore – neukazovat „aktualizujeme“, ale nabídnout kontakt.
+      })
+      .catch((err) => {
+        // Neukazovat „aktualizujeme“, ale nabídnout kontakt.
         console.error("Nabídku vozů se nepodařilo načíst:", err);
+        if (!alive) return;
         setCarsError(true);
         setCarsLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
+      });
+    return () => { alive = false; };
   }, []);
 
   useEffect(() => {
@@ -387,6 +385,9 @@ export default function App() {
       return <Suspense fallback={<PageLoader />}><LandingPage config={LANDING_PAGES[cleanPath]} /></Suspense>;
     }
     // Doplňkové služby – samostatné stránky a samostatný sklad
+    if (cleanPath.startsWith("auta-k-prodeji/")) {
+      return <Suspense fallback={<PageLoader />}><SaleCarDetailPage slug={cleanPath.slice("auta-k-prodeji/".length)} /></Suspense>;
+    }
     if (cleanPath === "auta-k-prodeji") {
       return <Suspense fallback={<PageLoader />}><CashCarsPage /></Suspense>;
     }

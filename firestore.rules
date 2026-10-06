@@ -72,6 +72,11 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
+    // Nastavení webu (adresa Deploy Hooku pro tlačítko „Publikovat“) – jen admin.
+    match /settings/{settingId} {
+      allow read, write: if isAdmin();
+    }
+
     // Blogové články – veřejně čitelné, zápis jen admin.
     match /posts/{postId} {
       allow read: if true;

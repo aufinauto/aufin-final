@@ -10,6 +10,14 @@
 - Poctivé texty k počáteční platbě („bez akontace“ už neslibuje odjezd bez platby).
 - **Oprava SEO pro Vercel:** na současném webu vrací všechny podstránky při přímém otevření **HTTP 404** (landing pages, blog, GDPR, robots.txt) a sitemap obsahuje neexistující URL. V2 při buildu vytvoří pro každou stránku vlastní HTML se správným title/description/canonical (`scripts/prerender.ts`), `404.html`, `robots.txt` a aktuální `sitemap.xml`. Nastavení je ve `vercel.json`.
 
+## Publikování obsahu (auta, auta k prodeji, články)
+
+Návštěvníci **nečtou Firestore** – auta a články se při buildu uloží do webu (`dist/data/*.json`, fotky jako soubory `dist/img/*`). Změny z administrace se proto na web dostanou až tlačítkem **„Publikovat změny na web“** v administraci (spustí nový build na Vercelu, 1–3 min).
+
+- Tlačítko používá **Deploy Hook** z Vercelu (Settings → Git → Deploy Hooks). Adresa se vloží v administraci přes ozubené kolečko u tlačítka a uloží do Firestore `settings/site` (čte jen admin).
+- Když se při buildu nepodaří načíst auta z Firestore, **build skončí chybou** a na webu zůstane předchozí verze (nenasadí se web bez nabídky). Stačí nasazení zopakovat.
+- Administrace dál čte a zapisuje Firestore přímo (poptávky jen posledních 100).
+
 ## Ochrana náhledu (automatická, podle domény)
 
 | | aufinauto.cz / www.aufinauto.cz | jiná doména (localhost, *.vercel.app) |
@@ -22,7 +30,7 @@
 
 ## Postup nasazení
 
-1. **Firestore pravidla** (Firebase konzole → Firestore → Pravidla): porovnat s `firestore.rules` a nasadit. Přibyly kolekce `saleCars` (veřejné čtení) a `inquiryPhotos` (fotky z výkupu). Bez toho bude „Auta k prodeji“ prázdná a fotky z výkupu se neuloží.
+1. **Firestore pravidla** (Firebase konzole → Firestore → databáze `ai-studio-…` → Security): bloky `saleCars`, `inquiryPhotos` (nasazeno 6. 10. 2026), `settings` (nastavení publikování) a `posts` (blog z administrace) podle `firestore.rules`.
 2. `npm run build` → `npm run check:release` (musí skončit „Vše v pořádku“).
 3. **Nejdřív náhledové nasazení na Vercelu** (ne produkce) a na jeho adrese *.vercel.app zkontrolovat:
    - `/kontakt`, `/vykup-auta`, `/blog/auto-na-splatky-podminky` → stránka se načte (ne 404),

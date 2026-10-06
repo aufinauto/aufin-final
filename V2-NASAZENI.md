@@ -17,6 +17,7 @@ Návštěvníci **nečtou Firestore** – auta a články se při buildu uloží
 - Tlačítko používá **Deploy Hook** z Vercelu (Settings → Git → Deploy Hooks). Adresa se vloží v administraci přes ozubené kolečko u tlačítka a uloží do Firestore `settings/site` (čte jen admin).
 - Když se při buildu nepodaří načíst auta z Firestore, **build skončí chybou** a na webu zůstane předchozí verze (nenasadí se web bez nabídky). Stačí nasazení zopakovat.
 - Administrace dál čte a zapisuje Firestore přímo (poptávky jen posledních 100).
+- **Fotky vozů** (splátky i k prodeji): až 25 na auto, každá jako samostatný dokument v kolekci `vehiclePhotos` (limit 1 MB platí na fotku, ne na auto). Auto drží pořadí v `photoIds` (první = hlavní) a malý náhled v `image`. Starší auta s fotkami v dokumentu fungují dál a při dalším uložení se převedou.
 
 ## Ochrana náhledu (automatická, podle domény)
 
@@ -30,7 +31,7 @@ Návštěvníci **nečtou Firestore** – auta a články se při buildu uloží
 
 ## Postup nasazení
 
-1. **Firestore pravidla** (Firebase konzole → Firestore → databáze `ai-studio-…` → Security): bloky `saleCars`, `inquiryPhotos` (nasazeno 6. 10. 2026), `settings` (nastavení publikování) a `posts` (blog z administrace) podle `firestore.rules`.
+1. **Firestore pravidla** (Firebase konzole → Firestore → databáze `ai-studio-…` → Security): bloky `saleCars`, `inquiryPhotos`, `settings`, `posts` (nasazeno 6. 10. 2026) a `vehiclePhotos` (fotky vozů) podle `firestore.rules`.
 2. `npm run build` → `npm run check:release` (musí skončit „Vše v pořádku“).
 3. **Nejdřív náhledové nasazení na Vercelu** (ne produkce) a na jeho adrese *.vercel.app zkontrolovat:
    - `/kontakt`, `/vykup-auta`, `/blog/auto-na-splatky-podminky` → stránka se načte (ne 404),

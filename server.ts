@@ -15,6 +15,7 @@ import {
   injectMeta,
   buildSitemapXml,
 } from "./seo";
+import sautoHandler from "./api/sauto";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -53,6 +54,9 @@ async function startServer() {
 
   // SEO: sitemap.xml — homepage, landing pages, blog (výpis i články) a detaily
   // vozů. Blog/vozy se načítají z Firestore, se statickými články jako fallback.
+  // Výbava z inzerátu Sauto (na Vercelu je to serverová funkce api/sauto.ts).
+  app.get("/api/sauto", (req, res) => sautoHandler(req, res));
+
   app.get("/sitemap.xml", async (_req, res) => {
     res.type("application/xml");
     res.send(await buildSitemapXml());

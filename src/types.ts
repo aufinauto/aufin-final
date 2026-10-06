@@ -17,6 +17,8 @@ export interface Car {
   };
   equipment: string;
   gallery: string[];
+  /** ID fotek v kolekci vehiclePhotos (první = hlavní); nahrazuje image/gallery s fotkami v dokumentu. */
+  photoIds?: string[];
   /** Délka nájmu v měsících – bez ní se celková částka nezobrazuje. */
   termMonths?: number;
   /** Závěrečná odkupní platba (Kč), pokud ji smlouva má. */
@@ -38,8 +40,13 @@ export interface SaleCar {
   price: number; // celková kupní cena v Kč
   image: string;
   gallery: string[];
+  /** ID fotek v kolekci vehiclePhotos (první = hlavní). */
+  photoIds?: string[];
   description: string;
+  /** Výbava; řádky „Kategorie: položka, položka“ se na webu zobrazí jako tabulka. */
   equipment?: string;
+  /** Odkaz na inzerát na Sauto.cz – z něj se v administraci načítá výbava. */
+  sautoUrl?: string;
   details: {
     year: string;
     mileage: string;
@@ -48,6 +55,8 @@ export interface SaleCar {
     power: string;
     transmission: string;
     color: string;
+    /** Karoserie (hatchback, kombi, sedan…). */
+    body?: string;
   };
   isVisible?: boolean;
   isSold?: boolean;

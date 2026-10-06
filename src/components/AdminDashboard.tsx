@@ -16,6 +16,8 @@ import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/aut
 import { Car, Inquiry, BlogPost } from '../types';
 import SaleCarsAdmin from './SaleCarsAdmin';
 import PublishBar from './PublishBar';
+import PhotoManager from './PhotoManager';
+import { deleteVehiclePhotos, loadVehiclePhotos, makeThumbnail, saveVehiclePhotos, type PhotoItem } from '../lib/vehiclePhotos';
 import InquiryPhotos, { deleteInquiryPhotos } from './InquiryPhotos';
 import { LEAD_TYPE_LABELS } from '../lib/leads';
 import { 
@@ -107,6 +109,9 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
 
   const [editForm, setEditForm] = useState<Partial<Car>>({});
   const [uploading, setUploading] = useState(false);
+  // Fotky upravovaného vozu – každá je samostatný dokument (vehiclePhotos), až 25 na auto.
+  const [photos, setPhotos] = useState<PhotoItem[]>([]);
+  const [photosLoading, setPhotosLoading] = useState(false);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
 
   // Blog
@@ -216,42 +221,22 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
     });
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: 'main' | 'gallery') => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Check size before compression as a safety measure
-    if (file.size > 25 * 1024 * 1024) { // 25MB limit for source file (modern phones)
-      alert("Soubor je příliš velký. Prosím nahrajte soubor menší než 25MB.");
-      return;
-    }
-
-    setUploading(true);
-    try {
-      const compressedBase64 = await compressImage(file);
-      
-      if (target === 'main') {
-        setEditForm(prev => ({ ...prev, image: compressedBase64 }));
-      } else {
-        setEditForm(prev => ({ 
-          ...prev, 
-          gallery: [...(prev.gallery || []), compressedBase64] 
-        }));
-      }
-    } catch (err) {
-      console.error("Compression error:", err);
-      alert("Chyba při zpracování obrázku.");
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const startEdit = (car: Car) => {
+  const startEdit = async (car: Car) => {
     setIsEditing(car.id);
     setEditForm(car);
+    setPhotos([]);
+    setPhotosLoading(true);
+    try {
+      setPhotos(await loadVehiclePhotos(car));
+    } catch (err: any) {
+      alert("Fotky se nepodařilo načíst: " + err.message);
+    } finally {
+      setPhotosLoading(false);
+    }
   };
 
   const startAdd = () => {
+    setPhotos([]);
     setIsEditing('new');
     setEditForm({
       name: '',
@@ -283,22 +268,13 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
       .replace(/(^-|-$)+/g, '');
   };
 
-  const calculateDocSize = (data: any) => {
-    const str = JSON.stringify(data);
-    return new Blob([str]).size;
-  };
-
   const saveCar = async () => {
     if (!editForm.name || !editForm.brand) {
       alert("Jméno a značka jsou povinné.");
       return;
     }
 
-    const docSize = calculateDocSize(editForm);
-    if (docSize > 1000000) { // Slightly less than 1,048,576 to be safe
-      alert(`CHYBA: Dokument inzerátu je příliš velký (${(docSize / 1024 / 1024).toFixed(2)} MB). Maximální limit Google databáze je 1 MB. Nahrajte prosím méně fotek nebo ve větším rozlišení (automaticky je zmenšujeme, ale galerie má svůj limit).`);
-      return;
-    }
+    if (photosLoading) return;
 
     // Default values and cleanup - if priceValue is not explicitly set, derive it from price string
     const numericPriceValue = editForm.priceValue && editForm.priceValue > 0 
@@ -314,22 +290,25 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
       updatedAt: serverTimestamp()
     };
 
-    // Close immediately for perceived speed
     const currentIsEditing = isEditing;
-    setIsEditing(null);
+    setUploading(true);
 
     try {
-      if (currentIsEditing === 'new') {
-        const docRef = await addDoc(collection(db, 'cars'), { 
-          ...carData, 
-          createdAt: serverTimestamp(),
-          isVisible: editForm.isVisible !== undefined ? editForm.isVisible : true 
-        });
-        console.log("Auto úspěšně přidáno s ID: ", docRef.id);
-      } else {
-        await updateDoc(doc(db, 'cars', currentIsEditing!), carData);
-        console.log("Auto úspěšně aktualizováno");
-      }
+      // Nové auto: nejdřív skrytý záznam (kvůli ID pro fotky), viditelnost se nastaví až po uložení fotek.
+      const id = currentIsEditing === 'new'
+        ? (await addDoc(collection(db, 'cars'), { name: editForm.name, isVisible: false, createdAt: serverTimestamp() })).id
+        : currentIsEditing!;
+      const photoIds = await saveVehiclePhotos(`cars/${id}`, photos, editForm.photoIds);
+      const image = photos[0] ? await makeThumbnail(photos[0].data) : '';
+      await updateDoc(doc(db, 'cars', id), {
+        ...carData,
+        image,
+        gallery: [],
+        photoIds,
+        isVisible: editForm.isVisible !== undefined ? editForm.isVisible : true,
+      });
+      console.log("Auto uloženo:", id);
+      setIsEditing(null);
     } catch (err: any) {
       console.error("Chyba při ukládání:", err);
       if (err.message?.includes("too large") || err.message?.includes("1048576 bytes")) {
@@ -339,9 +318,8 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
       } else {
         alert("Chyba při ukládání do databáze: " + err.message);
       }
-      // Re-open editor on error so user doesn't lose data
-      setIsEditing(currentIsEditing);
-      setEditForm(editForm);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -363,6 +341,7 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
 
         const carRef = doc(db, 'cars', id);
         await deleteDoc(carRef);
+        await deleteVehiclePhotos(cars.find(c => c.id === id)?.photoIds);
         
         console.log(`[Admin] Vůz ${id} úspěšně smazán z Firestore`);
         
@@ -468,7 +447,7 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
       try {
         const promises = cars.map(car => {
           console.log(`[Admin] Mažu auto: ${car.id} (${car.name})`);
-          return deleteDoc(doc(db, 'cars', car.id));
+          return Promise.all([deleteDoc(doc(db, 'cars', car.id)), deleteVehiclePhotos(car.photoIds)]);
         });
         await Promise.all(promises);
         console.log("[Admin] Všechna auta úspěšně smazána");
@@ -1166,8 +1145,8 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                 </div>
                 <div className="flex gap-2 md:gap-4 w-full sm:w-auto">
                   <button onClick={() => setIsEditing(null)} className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-white/40 hover:text-white transition-colors font-bold uppercase tracking-widest text-xs border border-white/10">ODHODIT</button>
-                  <button onClick={saveCar} className="flex-1 sm:flex-none px-6 md:px-10 py-2.5 md:py-4 bg-gold text-black rounded-2xl font-bold hover:bg-white transition-all shadow-xl shadow-gold/20 flex items-center justify-center gap-2">
-                    <Save className="w-4 h-4 md:w-5 md:h-5" /> <span>ULOŽIT</span>
+                  <button onClick={saveCar} disabled={uploading || photosLoading} className="flex-1 sm:flex-none px-6 md:px-10 py-2.5 md:py-4 bg-gold text-black rounded-2xl font-bold hover:bg-white transition-all shadow-xl shadow-gold/20 flex items-center justify-center gap-2 disabled:opacity-50">
+                    <Save className="w-4 h-4 md:w-5 md:h-5" /> <span>{uploading ? 'UKLÁDÁM…' : 'ULOŽIT'}</span>
                   </button>
                 </div>
               </div>
@@ -1182,41 +1161,7 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                             <ImageIcon className="w-3 h-3" /> Vizuály & Galerie
                         </h3>
 
-                        <div className="relative aspect-video rounded-xl overflow-hidden bg-black border border-white/5 mb-4 md:mb-8 group">
-                            {editForm.image ? (
-                                <img src={editForm.image} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                                <div className="absolute inset-0 flex flex-col items-center justify-center text-white/10">
-                                    <ImageIcon className="w-12 h-12 mb-3" />
-                                    <span className="text-xs uppercase font-bold tracking-widest">Nahrát foto</span>
-                                </div>
-                            )}
-                            <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 active:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-                                <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, 'main')} />
-                                <div className="flex flex-col items-center gap-2 text-white">
-                                    <Upload className="w-8 h-8" />
-                                    <span className="text-xs font-bold">{uploading ? 'NAHRÁVÁM...' : 'ZMĚNIT FOTO'}</span>
-                                </div>
-                            </label>
-                        </div>
-
-                        <div className="grid grid-cols-4 md:grid-cols-4 gap-2 md:gap-3 mb-4 md:mb-8">
-                          {editForm.gallery?.map((url, idx) => (
-                             <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-white/10 group/item">
-                                <img src={url} alt="" className="w-full h-full object-cover" />
-                                <button
-                                  onClick={() => setEditForm({ ...editForm, gallery: editForm.gallery?.filter((_, i) => i !== idx) })}
-                                  className="absolute inset-0 bg-red-500/80 opacity-0 group-hover/item:opacity-100 active:opacity-100 flex items-center justify-center text-white transition-opacity"
-                                >
-                                  <X className="w-4 h-4" />
-                                </button>
-                             </div>
-                          ))}
-                          <label className="aspect-square rounded-xl border border-dashed border-white/10 flex flex-col items-center justify-center text-white/20 hover:border-gold hover:text-gold cursor-pointer transition-all bg-white/5">
-                              <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, 'gallery')} />
-                              <Plus className="w-5 h-5" />
-                          </label>
-                        </div>
+                        <PhotoManager photos={photos} onChange={setPhotos} loading={photosLoading} />
                     </section>
 
                     <section className="bg-dark-card p-4 md:p-8 rounded-2xl md:rounded-[32px] border border-white/10">

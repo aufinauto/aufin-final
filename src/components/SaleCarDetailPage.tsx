@@ -6,9 +6,9 @@
  * (galerie, parametry, cena, poptávka). Data z Firestore `saleCars`.
  */
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { ArrowLeft, ArrowRight, BadgeCheck, Calendar, Fuel, Gauge, Palette, Phone, RefreshCw, Settings, ShieldCheck, Wrench, Zap } from "lucide-react";
+import { ArrowLeft, ArrowRight, BadgeCheck, Calendar, CarFront, ChevronLeft, ChevronRight, Fuel, Gauge, Palette, Phone, RefreshCw, Settings, ShieldCheck, Wrench, Zap } from "lucide-react";
 import { loadPublished } from "../lib/siteData";
 import { SITE_URL } from "../lib/siteEnv";
 import { submitLead } from "../lib/leads";
@@ -19,10 +19,42 @@ import { SiteHeader, SiteFooter, WhatsAppButton, SubmitSuccess, SUBMIT_ERROR, PH
 
 const EMPTY = { name: "", phone: "", email: "", message: "" };
 
+/** Šířka kartičky parametru: poslední neúplný řádek vyplní celou šířku. */
+function specSpan(i: number, n: number): string {
+  const desktopRest = n % 3; // počet karet v posledním řádku na počítači (0 = plný)
+  const lastRowDesktop = desktopRest && i >= n - desktopRest;
+  const desktop = !lastRowDesktop ? "sm:col-span-2" : desktopRest === 2 ? "sm:col-span-3" : "sm:col-span-6";
+  const mobile = n % 2 === 1 && i === n - 1 ? "col-span-2" : "";
+  return `${mobile} ${desktop}`;
+}
+
+/**
+ * Výbava: řádky „Kategorie: položka, položka“ (formát importu ze Sauta) jako tabulka,
+ * ostatní řádky jako běžný text.
+ */
+function EquipmentList({ text }: { text: string }) {
+  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  const rows = lines.map((l) => {
+    const m = l.match(/^([^:]{2,60}):\s*(.+)$/);
+    return m ? { title: m[1].trim(), items: m[2].trim() } : { title: "", items: l };
+  });
+  return (
+    <dl className="rounded-2xl border border-line bg-card divide-y divide-line">
+      {rows.map((r, i) => (
+        <div key={i} className="grid sm:grid-cols-[14rem_1fr] gap-1 sm:gap-6 px-4 sm:px-5 py-3.5">
+          {r.title && <dt className="text-ink/55 text-[15px]">{r.title}</dt>}
+          <dd className={`text-ink/85 text-[15px] leading-relaxed ${r.title ? "" : "sm:col-span-2"}`}>{r.items}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 export default function SaleCarDetailPage({ slug }: { slug: string }) {
   const [car, setCar] = useState<SaleCar | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "missing" | "error">("loading");
   const [active, setActive] = useState(0);
+  const touchX = useRef<number | null>(null);
   const [form, setForm] = useState(EMPTY);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState<null | { preview: boolean }>(null);
@@ -67,6 +99,19 @@ export default function SaleCarDetailPage({ slug }: { slug: string }) {
 
   const canonical = car ? `${SITE_URL}${saleCarPath(car)}` : `${SITE_URL}${SALE_BASE_PATH}/${slug}`;
   const images = car ? [...new Set([car.image, ...(car.gallery || [])].filter(Boolean))] : [];
+  const go = (dir: 1 | -1) => setActive((i) => (images.length ? (i + dir + images.length) % images.length : 0));
+
+  // Šipky na klávesnici přepínají fotky (jen když se nepíše do formuláře).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.target instanceof Element && e.target.closest("input, textarea, select")) return;
+      if (e.key === "ArrowRight") go(1);
+      if (e.key === "ArrowLeft") go(-1);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
   const summary = car
     ? [car.details?.year, formatKm(car.details?.mileage), car.details?.fuel, car.details?.transmission].filter(Boolean).join(" · ")
     : "";
@@ -86,6 +131,7 @@ export default function SaleCarDetailPage({ slug }: { slug: string }) {
     ...(car.details?.fuel ? { fuelType: car.details.fuel } : {}),
     ...(car.details?.transmission ? { vehicleTransmission: car.details.transmission } : {}),
     ...(car.details?.color ? { color: car.details.color } : {}),
+    ...(car.details?.body ? { bodyType: car.details.body } : {}),
     ...(car.details?.mileage
       ? { mileageFromOdometer: { "@type": "QuantitativeValue", value: String(car.details.mileage).replace(/\D/g, ""), unitCode: "KMT" } }
       : {}),
@@ -120,6 +166,7 @@ export default function SaleCarDetailPage({ slug }: { slug: string }) {
         { icon: Zap, label: "Výkon", value: car.details?.power },
         { icon: Settings, label: "Převodovka", value: car.details?.transmission },
         { icon: Palette, label: "Barva", value: car.details?.color },
+        { icon: CarFront, label: "Karoserie", value: car.details?.body },
       ].filter((s) => s.value)
     : [];
 
@@ -181,9 +228,31 @@ export default function SaleCarDetailPage({ slug }: { slug: string }) {
             <section className="max-w-7xl mx-auto px-4 sm:px-6 pb-12 grid lg:grid-cols-[1.4fr_1fr] gap-8 lg:gap-x-10 lg:items-start">
               {/* Galerie */}
               <div className="min-w-0 order-1 lg:order-none lg:col-start-1 lg:row-start-1">
-                <div className="relative aspect-[4/3] rounded-3xl overflow-hidden bg-sand border border-line">
+                <div
+                  className="relative aspect-[4/3] rounded-3xl overflow-hidden bg-sand border border-line group touch-pan-y select-none"
+                  onTouchStart={(e) => (touchX.current = e.touches[0].clientX)}
+                  onTouchEnd={(e) => {
+                    // Přejetí prstem doleva/doprava = další/předchozí fotka
+                    if (touchX.current === null) return;
+                    const dx = e.changedTouches[0].clientX - touchX.current;
+                    touchX.current = null;
+                    if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
+                  }}
+                >
                   {images[active] && (
-                    <img src={images[active]} alt={`${car.name} – fotka ${active + 1}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    <img src={images[active]} alt={`${car.name} – fotka ${active + 1}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" draggable={false} />
+                  )}
+                  {images.length > 1 && (
+                    <>
+                      <button type="button" onClick={() => go(-1)} aria-label="Předchozí fotka"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 md:w-12 md:h-12 rounded-full bg-night/70 hover:bg-brand text-white hover:text-on-brand flex items-center justify-center backdrop-blur transition-colors">
+                        <ChevronLeft className="w-6 h-6" />
+                      </button>
+                      <button type="button" onClick={() => go(1)} aria-label="Další fotka"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 md:w-12 md:h-12 rounded-full bg-night/70 hover:bg-brand text-white hover:text-on-brand flex items-center justify-center backdrop-blur transition-colors">
+                        <ChevronRight className="w-6 h-6" />
+                      </button>
+                    </>
                   )}
                   {car.isSold && <span className="absolute top-4 left-4 px-4 py-1.5 bg-night text-white text-sm font-bold uppercase rounded-full">Prodáno</span>}
                   {images.length > 1 && (
@@ -215,9 +284,11 @@ export default function SaleCarDetailPage({ slug }: { slug: string }) {
                 {specs.length > 0 && (
                   <div className="lg:mt-2">
                     <h2 className="text-2xl font-extrabold mb-5">Parametry vozu</h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      {specs.map(({ icon: Icon, label, value }) => (
-                        <div key={label} className="flex items-center gap-3 p-4 rounded-2xl border border-line bg-card">
+                    {/* Neúplný poslední řádek se roztáhne na celou šířku, ať je mřížka symetrická
+                        (počítač: 3 sloupce v 6dílné mřížce, mobil: 2 sloupce). */}
+                    <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
+                      {specs.map(({ icon: Icon, label, value }, i) => (
+                        <div key={label} className={`flex items-center gap-3 p-4 rounded-2xl border border-line bg-card ${specSpan(i, specs.length)}`}>
                           <div className="w-10 h-10 rounded-xl bg-brand-soft flex items-center justify-center shrink-0"><Icon className="w-5 h-5 text-brand-deep" /></div>
                           <div className="min-w-0"><div className="text-xs text-ink/60">{label}</div><div className="font-bold break-words">{value}</div></div>
                         </div>
@@ -226,10 +297,10 @@ export default function SaleCarDetailPage({ slug }: { slug: string }) {
                   </div>
                 )}
 
-                {car.equipment && (
+                {car.equipment?.trim() && (
                   <div className="mt-10">
-                    <h2 className="text-2xl font-extrabold mb-4">Výbava</h2>
-                    <p className="text-ink/75 leading-relaxed whitespace-pre-line">{car.equipment}</p>
+                    <h2 className="text-2xl font-extrabold mb-4">Výbava vozu</h2>
+                    <EquipmentList text={car.equipment} />
                   </div>
                 )}
                 {car.description && (

@@ -6,7 +6,7 @@
  *
  * Když soubor neexistuje (lokální náhled bez buildu), načte se kolekce přímo z Firestore.
  */
-import { collection, getDocs } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { db } from "./firebase";
 
 const FILES = { cars: "cars", saleCars: "sale-cars", posts: "posts" } as const;
@@ -27,7 +27,16 @@ async function fromFile(name: Name): Promise<any[] | null> {
 
 async function fromFirestore(name: Name): Promise<any[]> {
   const snap = await getDocs(collection(db, name));
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const items: any[] = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  // Fotky v samostatných dokumentech (vehiclePhotos) – doplnit jako image + gallery.
+  for (const item of items) {
+    if (!item.photoIds?.length) continue;
+    const photos = await Promise.all(item.photoIds.map((id: string) => getDoc(doc(db, "vehiclePhotos", id))));
+    const list = photos.filter((p) => p.exists()).map((p) => (p.data() as { data: string }).data);
+    item.image = list[0] ?? item.image;
+    item.gallery = list.slice(1);
+  }
+  return items;
 }
 
 /** Načte publikovaná data (jednou za návštěvu stránky). Při chybě vyhodí výjimku. */

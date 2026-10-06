@@ -72,6 +72,16 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
+    // Fotky vozů (až 25 na auto, každá jako samostatný dokument). Čtení veřejné –
+    // fotky jsou na webu stejně vidět a build je načítá bez přihlášení.
+    match /vehiclePhotos/{photoId} {
+      allow read: if true;
+      allow create, update: if isAdmin()
+        && request.resource.data.data is string
+        && request.resource.data.data.size() < 1000000;
+      allow delete: if isAdmin();
+    }
+
     // Nastavení webu (adresa Deploy Hooku pro tlačítko „Publikovat“) – jen admin.
     match /settings/{settingId} {
       allow read, write: if isAdmin();

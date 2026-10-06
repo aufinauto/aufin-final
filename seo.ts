@@ -163,6 +163,25 @@ export async function loadSiteData(): Promise<SiteData> {
       data.errors[name] = err?.code || err?.message || String(err);
     }
   }
+
+  // Fotky vozů jsou samostatné dokumenty (vehiclePhotos) – doplní se do image + gallery
+  // ve stejném tvaru, jaký web zná (první fotka = hlavní).
+  const needsPhotos = [...data.cars, ...data.saleCars].some((c) => c.photoIds?.length);
+  if (needsPhotos) {
+    try {
+      const snap = await getDocs(collection(getDb(), "vehiclePhotos"));
+      const byId = new Map(snap.docs.map((d) => [d.id, (d.data() as any).data as string]));
+      for (const car of [...data.cars, ...data.saleCars]) {
+        if (!car.photoIds?.length) continue;
+        const list = car.photoIds.map((id: string) => byId.get(id)).filter(Boolean);
+        car.image = list[0] ?? "";
+        car.gallery = list.slice(1);
+      }
+    } catch (err: any) {
+      // Bez fotek by se nasadila auta bez obrázků – build se zastaví (viz prerender.ts).
+      data.errors.cars = data.errors.cars || `vehiclePhotos: ${err?.code || err?.message || err}`;
+    }
+  }
   return data;
 }
 

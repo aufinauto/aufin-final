@@ -10,7 +10,8 @@ import React, { useEffect, useState } from "react";
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from "firebase/firestore";
 import { Edit, Eye, EyeOff, Plus, Save, Trash2, X } from "lucide-react";
 import { db } from "../lib/firebase";
-import { compressImage } from "../lib/images";
+import { deleteVehiclePhotos, loadVehiclePhotos, makeThumbnail, saveVehiclePhotos, type PhotoItem } from "../lib/vehiclePhotos";
+import PhotoManager from "./PhotoManager";
 import { saleCarPath } from "../lib/saleCars";
 import type { SaleCar } from "../types";
 
@@ -22,12 +23,13 @@ const EMPTY: Omit<SaleCar, "id"> = {
   gallery: [],
   description: "",
   equipment: "",
-  details: { year: "", mileage: "", fuel: "", engine: "", power: "", transmission: "", color: "" },
+  details: { year: "", mileage: "", fuel: "", engine: "", power: "", transmission: "", color: "", body: "" },
   isVisible: true,
   isSold: false,
 };
 
 const DETAIL_LABELS: Record<keyof SaleCar["details"], string> = {
+  body: "Karoserie",
   year: "Rok",
   mileage: "Nájezd (km)",
   fuel: "Palivo",
@@ -35,6 +37,10 @@ const DETAIL_LABELS: Record<keyof SaleCar["details"], string> = {
   power: "Výkon",
   transmission: "Převodovka",
   color: "Barva",
+};
+
+const DETAIL_PLACEHOLDERS: Partial<Record<keyof SaleCar["details"], string>> = {
+  body: "např. Hatchback, Kombi, Sedan",
 };
 
 const input = "w-full bg-black border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-gold text-sm";
@@ -45,6 +51,32 @@ export default function SaleCarsAdmin() {
   const [editing, setEditing] = useState<string | null>(null);
   const [form, setForm] = useState<Omit<SaleCar, "id">>(EMPTY);
   const [busy, setBusy] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [photos, setPhotos] = useState<PhotoItem[]>([]);
+  const [photosLoading, setPhotosLoading] = useState(false);
+
+  /** Výbava (a prázdná karoserie) z inzerátu na Sautu přes serverovou funkci /api/sauto. */
+  const importFromSauto = async () => {
+    if (!form.sautoUrl) return;
+    if (form.equipment?.trim() && !confirm("Nahradit současnou výbavu výbavou ze Sauta?")) return;
+    setImporting(true);
+    try {
+      const res = await fetch(`/api/sauto?url=${encodeURIComponent(form.sautoUrl)}`);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Chyba ${res.status}`);
+      if (!data.groups?.length) throw new Error("Inzerát na Sautu nemá vyplněnou výbavu.");
+      const equipment = data.groups.map((g: { title: string; items: string[] }) => `${g.title}: ${g.items.join(", ")}`).join("\n");
+      setForm((prev) => ({
+        ...prev,
+        equipment,
+        details: { ...prev.details, body: prev.details.body || data.body || "" },
+      }));
+    } catch (err: any) {
+      alert("Výbavu se nepodařilo načíst: " + err.message);
+    } finally {
+      setImporting(false);
+    }
+  };
 
   useEffect(() => {
     return onSnapshot(
@@ -54,19 +86,24 @@ export default function SaleCarsAdmin() {
     );
   }, []);
 
-  const upload = async (e: React.ChangeEvent<HTMLInputElement>, target: "main" | "gallery") => {
-    const files = Array.from<File>(e.target.files ?? []);
-    e.target.value = "";
-    setBusy(true);
+  /** Otevře editor; fotky auta se načtou zvlášť (každá je samostatný dokument). */
+  const openEditor = async (car: SaleCar | null) => {
+    setPhotos([]);
+    if (!car) {
+      setForm(EMPTY);
+      setEditing("new");
+      return;
+    }
+    const { id, ...rest } = car;
+    setForm({ ...EMPTY, ...rest, details: { ...EMPTY.details, ...rest.details } });
+    setEditing(id);
+    setPhotosLoading(true);
     try {
-      for (const f of files) {
-        const img = await compressImage(f);
-        setForm((prev) => (target === "main" ? { ...prev, image: img } : { ...prev, gallery: [...prev.gallery, img] }));
-      }
-    } catch {
-      alert("Chyba při zpracování obrázku.");
+      setPhotos(await loadVehiclePhotos(car));
+    } catch (err: any) {
+      alert("Fotky se nepodařilo načíst: " + err.message);
     } finally {
-      setBusy(false);
+      setPhotosLoading(false);
     }
   };
 
@@ -75,17 +112,14 @@ export default function SaleCarsAdmin() {
       alert("Název, značka a cena jsou povinné.");
       return;
     }
-    if (new Blob([JSON.stringify(form)]).size > 1_000_000) {
-      alert("Inzerát je větší než 1 MB (limit databáze). Odeberte některé fotky.");
-      return;
-    }
+    if (photosLoading) return;
     setBusy(true);
     try {
-      if (editing === "new") {
-        await addDoc(collection(db, "saleCars"), { ...form, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-      } else if (editing) {
-        await updateDoc(doc(db, "saleCars", editing), { ...form, updatedAt: serverTimestamp() });
-      }
+      // Fotky jsou samostatné dokumenty – v autě zůstane jen jejich pořadí a malý náhled.
+      const id = editing === "new" ? (await addDoc(collection(db, "saleCars"), { name: form.name, isVisible: false, createdAt: serverTimestamp() })).id : editing!;
+      const photoIds = await saveVehiclePhotos(`saleCars/${id}`, photos, form.photoIds);
+      const image = photos[0] ? await makeThumbnail(photos[0].data) : "";
+      await updateDoc(doc(db, "saleCars", id), { ...form, image, gallery: [], photoIds, updatedAt: serverTimestamp() });
       setEditing(null);
     } catch (err: any) {
       alert("Chyba při ukládání: " + err.message);
@@ -96,7 +130,7 @@ export default function SaleCarsAdmin() {
 
   const remove = async (car: SaleCar) => {
     if (!confirm(`Opravdu smazat „${car.name}“? Akce je nevratná.`)) return;
-    try { await deleteDoc(doc(db, "saleCars", car.id)); } catch (err: any) { alert("Chyba při mazání: " + err.message); }
+    try { await deleteDoc(doc(db, "saleCars", car.id)); await deleteVehiclePhotos(car.photoIds); } catch (err: any) { alert("Chyba při mazání: " + err.message); }
   };
 
   return (
@@ -106,7 +140,7 @@ export default function SaleCarsAdmin() {
           <h2 className="text-2xl font-bold">Auta k prodeji</h2>
           <p className="text-white/40 text-sm mt-1">Samostatný sklad pro přímý prodej. Na webu: /auta-k-prodeji. Splátkové vozy spravujte v záložce Vozidla.</p>
         </div>
-        <button onClick={() => { setForm(EMPTY); setEditing("new"); }} className="bg-gold text-black px-6 py-4 rounded-2xl font-bold hover:bg-white transition-all flex items-center gap-2 shrink-0">
+        <button onClick={() => openEditor(null)} className="bg-gold text-black px-6 py-4 rounded-2xl font-bold hover:bg-white transition-all flex items-center gap-2 shrink-0">
           <Plus className="w-5 h-5" /> NOVÝ VŮZ
         </button>
       </div>
@@ -124,7 +158,7 @@ export default function SaleCarsAdmin() {
                 Stránka na webu: {saleCarPath(car)}
               </a>
               <div className="flex gap-2 mt-auto">
-                <button onClick={() => { const { id, ...rest } = car; setForm({ ...EMPTY, ...rest, details: { ...EMPTY.details, ...rest.details } }); setEditing(id); }}
+                <button onClick={() => openEditor(car)}
                   className="flex-1 bg-white/5 hover:bg-white/10 rounded-xl h-12 font-bold flex items-center justify-center gap-2"><Edit className="w-4 h-4" /> UPRAVIT</button>
                 <button onClick={() => updateDoc(doc(db, "saleCars", car.id), { isVisible: car.isVisible === false })}
                   title={car.isVisible !== false ? "Viditelné na webu" : "Skryté"}
@@ -155,30 +189,26 @@ export default function SaleCarsAdmin() {
                 <input type="number" className={input} value={form.price || ""} onChange={(e) => setForm({ ...form, price: parseInt(e.target.value) || 0 })} /></label>
               {(Object.keys(DETAIL_LABELS) as (keyof SaleCar["details"])[]).map((k) => (
                 <label key={k} className="space-y-1 block"><span className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{DETAIL_LABELS[k]}</span>
-                  <input className={input} value={form.details[k]} onChange={(e) => setForm({ ...form, details: { ...form.details, [k]: e.target.value } })} /></label>
+                  <input className={input} placeholder={DETAIL_PLACEHOLDERS[k]} value={form.details[k] ?? ""} onChange={(e) => setForm({ ...form, details: { ...form.details, [k]: e.target.value } })} /></label>
               ))}
             </div>
             <label className="space-y-1 block"><span className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Popis</span>
               <textarea className={`${input} h-28 resize-none`} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></label>
-            <label className="space-y-1 block"><span className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Výbava</span>
-              <textarea className={`${input} h-24 resize-none`} value={form.equipment} onChange={(e) => setForm({ ...form, equipment: e.target.value })} /></label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <label className="block p-4 rounded-xl border border-dashed border-white/20 cursor-pointer text-sm text-white/60">
-                Hlavní fotka {form.image ? "✔" : ""}<input type="file" accept="image/*" className="sr-only" onChange={(e) => upload(e, "main")} />
-              </label>
-              <label className="block p-4 rounded-xl border border-dashed border-white/20 cursor-pointer text-sm text-white/60">
-                Galerie ({form.gallery.length}) – přidat<input type="file" accept="image/*" multiple className="sr-only" onChange={(e) => upload(e, "gallery")} />
-              </label>
-            </div>
-            {form.gallery.length > 0 && (
-              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                {form.gallery.map((g, i) => (
-                  <button key={i} type="button" onClick={() => setForm({ ...form, gallery: form.gallery.filter((_, j) => j !== i) })} title="Odebrat" className="aspect-square rounded-lg overflow-hidden relative">
-                    <img src={g} alt="" className="w-full h-full object-cover" /><span className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center"><Trash2 className="w-4 h-4" /></span>
-                  </button>
-                ))}
+            <div className="space-y-2 p-4 rounded-2xl border border-gold/20 bg-gold/5">
+              <span className="text-[10px] uppercase tracking-widest text-gold font-bold">Výbava ze Sauto.cz</span>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input className={input} placeholder="https://www.sauto.cz/osobni/detail/…/123456789" value={form.sautoUrl ?? ""}
+                  onChange={(e) => setForm({ ...form, sautoUrl: e.target.value })} />
+                <button type="button" onClick={importFromSauto} disabled={importing || !form.sautoUrl}
+                  className="shrink-0 px-5 py-3 rounded-xl bg-gold text-black font-bold text-sm disabled:opacity-50">
+                  {importing ? "Načítám…" : "Načíst výbavu"}
+                </button>
               </div>
-            )}
+              <p className="text-xs text-white/40">Vložte odkaz na inzerát tohoto auta na Sautu. Výbava se doplní do pole níže, kde ji můžete upravit.</p>
+            </div>
+            <label className="space-y-1 block"><span className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Výbava</span>
+              <textarea className={`${input} h-48 resize-y`} placeholder={"Bezpečnostní systémy: ABS, ESP\nSedadla: Isofix, Vyhřívaná sedadla"} value={form.equipment} onChange={(e) => setForm({ ...form, equipment: e.target.value })} /></label>
+            <PhotoManager photos={photos} onChange={setPhotos} loading={photosLoading} />
             <div className="flex flex-wrap gap-6 text-sm">
               <label className="flex items-center gap-2"><input type="checkbox" checked={form.isVisible !== false} onChange={(e) => setForm({ ...form, isVisible: e.target.checked })} /> Zobrazit na webu</label>
               <label className="flex items-center gap-2"><input type="checkbox" checked={!!form.isSold} onChange={(e) => setForm({ ...form, isSold: e.target.checked })} /> Prodáno</label>
